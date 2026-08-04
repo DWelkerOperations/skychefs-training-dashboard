@@ -980,7 +980,7 @@ tbody tr:hover {
 }
 
 .trainee-table {
-  min-width: 5600px;
+  min-width: 7200px;
   table-layout: fixed;
 }
 
@@ -1031,10 +1031,6 @@ tbody tr:hover {
   width: 220px;
 }
 
-.tracker-col-employee {
-  width: 150px;
-}
-
 .tracker-col-standard {
   width: 140px;
 }
@@ -1045,10 +1041,6 @@ tbody tr:hover {
 
 .tracker-col-long {
   width: 190px;
-}
-
-.tracker-col-progress {
-  width: 160px;
 }
 
 .tracker-col-week {
@@ -1086,13 +1078,6 @@ tbody tr:hover {
   position: sticky;
   z-index: 4;
   left: 64px;
-}
-
-.tracker-header-row .tracker-col-employee,
-.trainee-table td.tracker-col-employee {
-  position: sticky;
-  z-index: 4;
-  left: 284px;
   box-shadow: 8px 0 12px -12px rgba(31, 33, 36, 0.65);
 }
 
@@ -1141,6 +1126,11 @@ tbody tr:hover {
 .tracker-flag.is-neutral {
   background: var(--surface-soft);
   color: var(--ink-soft);
+}
+
+.tracker-flag.is-current {
+  background: var(--risk-soft);
+  color: var(--risk);
 }
 
 .tracker-text {
@@ -1465,6 +1455,7 @@ tbody tr:hover {
 
 .milestone-check {
   display: flex;
+  flex-direction: column;
   min-height: 98px;
   align-items: flex-start;
   gap: 9px;
@@ -1473,19 +1464,6 @@ tbody tr:hover {
   border-radius: 10px;
   background: var(--surface-raised);
   cursor: pointer;
-}
-
-.milestone-check:has(input:checked) {
-  border-color: #9ccbb8;
-  background: var(--good-soft);
-}
-
-.milestone-check input {
-  flex: 0 0 18px;
-  width: 18px;
-  min-height: 18px;
-  margin-top: 2px;
-  accent-color: var(--good);
 }
 
 .milestone-check span {
@@ -1499,6 +1477,12 @@ tbody tr:hover {
   margin-bottom: 4px;
   color: var(--ink);
   font-size: 0.76rem;
+}
+
+.milestone-check select {
+  width: 100%;
+  min-height: 38px;
+  margin-top: auto;
 }
 
 .aircraft-fieldset {
@@ -1541,6 +1525,44 @@ tbody tr:hover {
 
 .notes-grid label:last-child {
   grid-column: 1 / -1;
+}
+
+.cohort-fieldset {
+  margin: 22px 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.cohort-fieldset legend {
+  margin-bottom: 8px;
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.cohort-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+
+.cohort-grid label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-raised);
+  color: var(--ink-soft);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.cohort-grid input {
+  width: 16px;
+  min-height: 16px;
+  accent-color: var(--brand-red);
 }
 
 .form-error {

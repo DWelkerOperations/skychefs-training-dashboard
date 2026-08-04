@@ -1,6 +1,6 @@
 # Goal prompt: SkyChefs Training Progression Dashboard
 
-Build and maintain a responsive, static HTML dashboard for the SkyChefs OJT training pipeline, deployable on GitHub Pages without a build step. Use `Progression Template.xlsb` and `Template Trainee Tracker.xlsx` as the source references for field structure, training stages, certification forecasts, and staffing baseline.
+Build and maintain a responsive, static HTML dashboard for the SkyChefs OJT training pipeline, deployable on GitHub Pages without a build step. Use `ORD Trainee Progression Tracker (2026).xlsx`, especially its `OJT Pipeline` sheet, as the current operational reference. Retain `Progression Template.xlsb` and `Template Trainee Tracker.xlsx` only as earlier structural and staffing references.
 
 ## Goal
 
@@ -18,16 +18,16 @@ Give leaders a fast overall view of training progress and give training coordina
 
 1. **Overview homepage**
    - Automatically load aggregate information extracted from the supplied workbooks; do not require the visitor to import a file.
-   - When the published trainee roster is empty, show the workbook driver forecast, staffing need and variance, TDY totals, position goals, regional staffing, and stations with the largest open-position gaps.
+   - When the published trainee roster is empty, show aggregate current-list counts, active trainees, certifications, certifications due in the next 30 days, attention counts, stage mix, position mix, status mix, and the eight-week certification forecast from the active OJT Pipeline.
    - When trainee records exist, show active trainee count, on-track rate, certifications projected in the next 30 days, training stages, and people needing attention.
    - Keep workbook dates visible so forecast values are not mistaken for live headcount.
 
 2. **Trainee input tab**
    - Search and filters.
-   - A horizontally navigable tracker that preserves every source workbook column in source order, even when the roster is empty.
-   - Keep trainee name, employee number, and the edit action visible while moving between core, progress, aircraft, and outcome column groups.
-   - Clearly mark protected progress, projected dates, and readiness fields.
-   - Add/edit form based on the tracker fields: trainee name, employee number, position, status, source, hire/transfer date, safety class date, dock training, AOA badge, customs seal, OJT assignment, trainer, schedule, training stage, five weekly milestones, aircraft qualifications, actual certification date, delay reason, and comments.
+   - A horizontally navigable tracker that preserves all 43 `OJT Pipeline` operational columns in source order, even when the roster is empty.
+   - Keep trainee name and the edit action visible while moving between core, access/prerequisite, progress, aircraft, and outcome column groups.
+   - Clearly mark protected probation, elapsed-time, safety, projected-date, forecast, variance, and readiness fields.
+   - Add/edit form based on the current tracker fields, including license class, class attendance, inflight-door session, dock status, ADA, A.S.S.E.T., paperwork, fingerprint appointment, SIDA/badge steps, OJT assignment, trainer, schedule, weekly status values, safety certifier, four aircraft types, actual certification, cohort markers, delay reason, and comments.
    - Clearly gray and lock all derived date fields.
    - CSV and JSON export.
 
@@ -42,13 +42,12 @@ Give leaders a fast overall view of training progress and give training coordina
 
 Keep these calculations in application code and out of editable form fields:
 
-- Probation end = hire/transfer date + 90 calendar days.
-- Safety class end = safety class start + 4 calendar days.
-- Projected certification priority:
-  1. Actual certification date, when entered.
-  2. Assigned OJT date + 21 calendar days.
-  3. Safety class start + 35 calendar days.
-  4. Hire/transfer date + 35 calendar days.
+- Probation end = hire/transfer date + 60 calendar days.
+- Days in training = current date − hire/transfer date.
+- Safety class end = hire/transfer date + 3 calendar days, matching the current formula pattern used for later cohorts.
+- Projected certification = hire/transfer date + 35 calendar days.
+- Certification forecast = assigned OJT date + 21 calendar days; otherwise best-guess SIDA date + 21 calendar days; otherwise the 35-day projected date.
+- Days +/- projected certification = projected certification date − actual certification date.
 - Progress = 20% per completed week, with the selected stage acting as a minimum progress indicator.
 - Readiness rules:
   - Certified when an actual certification date is present or the record is marked certified.
@@ -62,7 +61,7 @@ Treat the day offsets as centrally managed business assumptions. Do not make the
 
 ## Data and privacy requirements
 
-- Do not manufacture trainee records when the supplied tracker is empty; present a clear empty state and allow direct entry.
+- Publish only aggregate workbook counts on the public GitHub Pages site; do not copy employee-level rows from the active workbook into the repository.
 - Never copy the source workbooks into the public site.
 - Do not expose employee data in a public GitHub repository or public Pages site.
 - Persist browser edits locally and make the UI state explicit: Workbook data, Published data, Local edits, or Data unavailable.
@@ -74,7 +73,7 @@ Treat the day offsets as centrally managed business assumptions. Do not make the
 - No external package, CDN, or build system is required.
 - Responsive at desktop, tablet, and phone sizes.
 - Usable with keyboard navigation and screen readers; dialogs, tabs, labels, tables, and status messages have accessible semantics.
-- Handles an empty roster without broken cards or charts.
+- Handles an intentionally empty public roster without broken cards or charts while still showing the aggregate current-state snapshot.
 - Prevents editing calculated dates through the user interface.
 - Exports source facts to JSON and includes derived fields only in the human-readable CSV output.
 - Uses the approved SkyChefs logo file without modification.

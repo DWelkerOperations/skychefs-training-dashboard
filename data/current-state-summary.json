@@ -1,0 +1,111 @@
+{
+  "schemaVersion": 1,
+  "extractedAt": "2026-08-04T22:34:00.737Z",
+  "asOf": "2026-08-04",
+  "source": {
+    "file": "ORD Trainee Progression Tracker (2026).xlsx",
+    "sheet": "OJT Pipeline",
+    "usedRange": "A1:CD211",
+    "recordRange": "A6:AQ211",
+    "publishedData": "Aggregate counts only; employee-level rows are intentionally excluded from the public site."
+  },
+  "totals": {
+    "records": 206,
+    "currentRoster": 70,
+    "active": 29,
+    "certified": 32,
+    "dueNext30Days": 11,
+    "needsAttention": 27,
+    "formulaErrorsObserved": 1
+  },
+  "readinessCounts": {
+    "Delayed": 26,
+    "On Track": 2,
+    "At Risk": 1
+  },
+  "activeStageCounts": {
+    "Stage Not Updated": 17,
+    "OJT": 11,
+    "Dock Familiarization": 1
+  },
+  "activePositionCounts": {
+    "CDL": 25,
+    "Helper": 3,
+    "Non-CDL": 1
+  },
+  "statusCounts": {
+    "Certified": 32,
+    "Good": 29,
+    "Transfer": 4,
+    "Not Hired": 3,
+    "Demotion": 1,
+    "Light Duty": 1
+  },
+  "sourceCounts": {
+    "External": 69,
+    "Internal": 1
+  },
+  "forecastWeeks": [
+    { "weekEnding": "2026-08-10", "certifications": 5 },
+    { "weekEnding": "2026-08-17", "certifications": 2 },
+    { "weekEnding": "2026-08-24", "certifications": 2 },
+    { "weekEnding": "2026-08-31", "certifications": 2 },
+    { "weekEnding": "2026-09-07", "certifications": 0 },
+    { "weekEnding": "2026-09-14", "certifications": 0 },
+    { "weekEnding": "2026-09-21", "certifications": 0 },
+    { "weekEnding": "2026-09-28", "certifications": 0 }
+  ],
+  "trackerColumns": [
+    "#",
+    "Trainee",
+    "Position",
+    "Status",
+    "License Class",
+    "Source",
+    "Hire Date (or Transfer Date)",
+    "Probation End Date",
+    "Days in Training",
+    "Class Attendance",
+    "Safety Class End Date",
+    "Inflight Door Training (session W/F)",
+    "Dock Training Status",
+    "ADA Certificate (Printed)",
+    "A.S.S.E.T. (Trailer)",
+    "Paperwork Filled Out",
+    "Fingerprint Appointment",
+    "Badge Pickup, SIDA Training, and DT Customer Stamp",
+    "SIDA Badge Status",
+    "Best-Guess SIDA Date",
+    "Assigned OJT Date",
+    "OJT Trainer",
+    "Schedule",
+    "Training Stage",
+    "Week 1: Initial Classroom Training and Truck Familiarization",
+    "Week 2: Off-Site AOA Training and Airport Familiarization",
+    "Week 3: Full On-the-Job Training (OJT)",
+    "Week 4: On-the-Job Training (OJT) / Evaluation",
+    "Week 5: Certification and Training Finalization",
+    "Projected Date for Certification",
+    "Certification Forecast (21 Days from Badging)",
+    "Safety Certifier",
+    "CRJ",
+    "E75",
+    "A319 / A320 / A321",
+    "B737",
+    "Date of Certification",
+    "Days +/- Projected Certification",
+    "Reason for Certification Delay",
+    "Comments",
+    "June 25, 2026 Current List",
+    "Separated from Certification",
+    "Hired After July 1, 2026"
+  ],
+  "protectedCalculations": [
+    { "field": "Probation End Date", "rule": "Hire or transfer date + 60 calendar days" },
+    { "field": "Days in Training", "rule": "Current date - hire or transfer date" },
+    { "field": "Safety Class End Date", "rule": "Hire or transfer date + 3 calendar days" },
+    { "field": "Projected Date for Certification", "rule": "Hire or transfer date + 35 calendar days" },
+    { "field": "Certification Forecast", "rule": "Assigned OJT date + 21 calendar days; otherwise best-guess SIDA date + 21 days" },
+    { "field": "Days +/- Projected Certification", "rule": "Projected certification date - actual certification date" }
+  ]
+}

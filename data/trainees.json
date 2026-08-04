@@ -1,6 +1,6 @@
 {
-  "schemaVersion": 2,
-  "publishedAt": "2026-08-04T20:00:00.000Z",
-  "note": "The supplied tracker contains no trainee rows. Add records directly in the dashboard and export JSON to publish a shared roster.",
+  "schemaVersion": 3,
+  "publishedAt": "2026-08-04T22:34:00.737Z",
+  "note": "Employee-level rows are intentionally excluded from the public GitHub Pages repository. Use an approved private data service before publishing a shared roster.",
   "trainees": []
 }

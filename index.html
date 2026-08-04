@@ -9,8 +9,8 @@
     />
     <title>Training Progression Dashboard | SkyChefs</title>
     <link rel="icon" href="assets/skychefs-logo-approved.svg" type="image/svg+xml" />
-    <link rel="stylesheet" href="styles.css" />
-    <script src="app.js" defer></script>
+    <link rel="stylesheet" href="styles.css?v=3" />
+    <script src="app.js?v=3" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#main-content">Skip to dashboard</a>
@@ -242,9 +242,9 @@
           <div class="notice notice-info" role="note">
             <span class="notice-icon" aria-hidden="true">i</span>
             <div>
-              <strong>All 34 source tracker columns are shown below.</strong>
-              The web tracker also includes progress, reason for delay, readiness, and edit controls. Columns marked with a
-              lock are calculated automatically and cannot be overwritten. The supplied file contains no trainee records.
+              <strong>All 43 operational columns from the current OJT Pipeline are shown below.</strong>
+              The web tracker also adds readiness and edit controls. Locked columns are calculated automatically and cannot
+              be overwritten. The public page uses aggregate workbook counts; employee-level rows are intentionally not published.
             </div>
           </div>
 
@@ -252,7 +252,7 @@
             <label class="search-field">
               <span class="sr-only">Search trainees</span>
               <span aria-hidden="true">⌕</span>
-              <input id="trainee-search" type="search" placeholder="Search name, employee number, trainer…" />
+              <input id="trainee-search" type="search" placeholder="Search trainee, trainer, position, or stage…" />
             </label>
             <label>
               <span class="sr-only">Filter by position</span>
@@ -277,9 +277,10 @@
 
           <article class="panel table-panel">
             <div class="tracker-column-nav" aria-label="Tracker column groups">
-              <span>Complete tracker · 34 source + 4 tracking columns</span>
+              <span>Complete tracker · 43 source + 2 web-control columns</span>
               <div role="group" aria-label="Jump to tracker columns">
                 <button class="text-button" type="button" data-tracker-scroll-target="tracker-group-core">Core Fields</button>
+                <button class="text-button" type="button" data-tracker-scroll-target="tracker-group-requirements">Access &amp; Prerequisites</button>
                 <button class="text-button" type="button" data-tracker-scroll-target="tracker-group-progress">Training Progress</button>
                 <button class="text-button" type="button" data-tracker-scroll-target="tracker-group-aircraft">Aircraft</button>
                 <button class="text-button" type="button" data-tracker-scroll-target="tracker-group-outcomes">Outcomes</button>
@@ -290,65 +291,78 @@
                 <colgroup>
                   <col class="tracker-col-number" />
                   <col class="tracker-col-name" />
-                  <col class="tracker-col-employee" />
-                  <col class="tracker-col-standard" span="3" />
-                  <col class="tracker-col-date" span="4" />
-                  <col class="tracker-col-standard" span="3" />
+                  <col class="tracker-col-standard" span="4" />
+                  <col class="tracker-col-date" span="2" />
+                  <col class="tracker-col-standard" />
+                  <col class="tracker-col-standard" />
                   <col class="tracker-col-date" />
-                  <col class="tracker-col-long" span="3" />
-                  <col class="tracker-col-progress" />
+                  <col class="tracker-col-standard" span="8" />
+                  <col class="tracker-col-date" span="2" />
+                  <col class="tracker-col-long" span="2" />
+                  <col class="tracker-col-long" />
                   <col class="tracker-col-week" span="5" />
+                  <col class="tracker-col-date" span="2" />
+                  <col class="tracker-col-long" />
+                  <col class="tracker-col-aircraft" span="4" />
                   <col class="tracker-col-date" />
-                  <col class="tracker-col-aircraft" span="9" />
-                  <col class="tracker-col-date" />
+                  <col class="tracker-col-standard" />
                   <col class="tracker-col-notes" span="2" />
+                  <col class="tracker-col-standard" span="3" />
                   <col class="tracker-col-readiness" />
                   <col class="tracker-col-actions" />
                 </colgroup>
                 <thead>
                   <tr class="tracker-group-row">
-                    <th id="tracker-group-core" scope="colgroup" colspan="17">Core Tracker Fields</th>
-                    <th id="tracker-group-progress" scope="colgroup" colspan="7">Training Progress</th>
-                    <th id="tracker-group-aircraft" scope="colgroup" colspan="9">Aircraft Qualifications</th>
-                    <th id="tracker-group-outcomes" scope="colgroup" colspan="5">Outcome &amp; Actions</th>
+                    <th id="tracker-group-core" scope="colgroup" colspan="9">Core Tracker Fields</th>
+                    <th id="tracker-group-requirements" scope="colgroup" colspan="14">Access &amp; Prerequisites</th>
+                    <th id="tracker-group-progress" scope="colgroup" colspan="9">Training Progress</th>
+                    <th id="tracker-group-aircraft" scope="colgroup" colspan="4">Aircraft Qualifications</th>
+                    <th id="tracker-group-outcomes" scope="colgroup" colspan="9">Outcome &amp; Actions</th>
                   </tr>
                   <tr class="tracker-header-row">
                     <th class="tracker-col-number" scope="col">#</th>
-                    <th class="tracker-col-name" scope="col">Trainee Name</th>
-                    <th class="tracker-col-employee" scope="col">Employee Number</th>
+                    <th class="tracker-col-name" scope="col">Trainee</th>
                     <th scope="col">Position</th>
                     <th scope="col">Status</th>
+                    <th scope="col">License Class</th>
                     <th scope="col">Source</th>
                     <th class="tracker-col-date" scope="col">Hire Date (or Transfer Date)</th>
                     <th class="tracker-col-date tracker-locked-column" scope="col">Probation End Date <span title="Calculated field" aria-label="Calculated field">🔒</span></th>
-                    <th class="tracker-col-date" scope="col">Safety Initial Class Start Date</th>
-                    <th class="tracker-col-date tracker-locked-column" scope="col">Safety Initial Class End Date <span title="Calculated field" aria-label="Calculated field">🔒</span></th>
-                    <th scope="col">Dock Training</th>
-                    <th scope="col">AOA Badge</th>
-                    <th scope="col">Customs Seal</th>
+                    <th class="tracker-locked-column" scope="col">Days in Training <span title="Calculated field" aria-label="Calculated field">🔒</span></th>
+                    <th scope="col">Class Attendance</th>
+                    <th class="tracker-col-date tracker-locked-column" scope="col">Safety Class End Date <span title="Calculated field" aria-label="Calculated field">🔒</span></th>
+                    <th scope="col">Inflight Door Training (session W/F)</th>
+                    <th scope="col">Dock Training Status</th>
+                    <th scope="col">ADA Certificate (Printed)</th>
+                    <th scope="col">A.S.S.E.T. (Trailer)</th>
+                    <th scope="col">Paperwork Filled Out</th>
+                    <th scope="col">Fingerprint Appointment</th>
+                    <th scope="col">Badge Pickup, SIDA Training, and DT Customer Stamp</th>
+                    <th scope="col">SIDA Badge Status</th>
+                    <th class="tracker-col-date" scope="col">Best-Guess SIDA Date</th>
                     <th class="tracker-col-date" scope="col">Assigned OJT Date</th>
-                    <th class="tracker-col-long" scope="col">OJT Trainer Name</th>
-                    <th class="tracker-col-long" scope="col">OJT Trainer Schedule</th>
+                    <th class="tracker-col-long" scope="col">OJT Trainer</th>
+                    <th class="tracker-col-long" scope="col">Schedule</th>
                     <th class="tracker-col-long" scope="col">Training Stage</th>
-                    <th class="tracker-col-progress tracker-locked-column" scope="col">Progress <span title="Calculated field" aria-label="Calculated field">🔒</span></th>
                     <th class="tracker-col-week" scope="col">WK 1: Initial Classroom Training &amp; Truck Familiarization</th>
                     <th class="tracker-col-week" scope="col">WK 2: Off-Site AOA Training &amp; Airport Familiarization</th>
                     <th class="tracker-col-week" scope="col">WK 3: Full On-the-Job Training</th>
                     <th class="tracker-col-week" scope="col">WK 4: OJT / Evaluation</th>
                     <th class="tracker-col-week" scope="col">WK 5: Certification &amp; Training Finalization</th>
-                    <th class="tracker-col-date tracker-locked-column" scope="col">Projected Certification Date <span title="Calculated field" aria-label="Calculated field">🔒</span></th>
+                    <th class="tracker-col-date tracker-locked-column" scope="col">Projected Date for Certification <span title="Calculated field" aria-label="Calculated field">🔒</span></th>
+                    <th class="tracker-col-date tracker-locked-column" scope="col">Certification Forecast <span title="Calculated field" aria-label="Calculated field">🔒</span></th>
+                    <th class="tracker-col-long" scope="col">Safety Certifier</th>
                     <th class="tracker-col-aircraft" scope="col">CRJ</th>
                     <th class="tracker-col-aircraft" scope="col">E75</th>
                     <th class="tracker-col-aircraft" scope="col">A319 / A320 / A321</th>
                     <th class="tracker-col-aircraft" scope="col">B737</th>
-                    <th class="tracker-col-aircraft" scope="col">B757</th>
-                    <th class="tracker-col-aircraft" scope="col">B767</th>
-                    <th class="tracker-col-aircraft" scope="col" title="The source tracker contains a second B767 column.">B767 (2)</th>
-                    <th class="tracker-col-aircraft" scope="col">A380</th>
-                    <th class="tracker-col-aircraft" scope="col">B747</th>
                     <th class="tracker-col-date" scope="col">Date of Certification</th>
+                    <th class="tracker-locked-column" scope="col">Days +/- Projected Certification <span title="Calculated field" aria-label="Calculated field">🔒</span></th>
+                    <th class="tracker-col-notes" scope="col">Reason for Certification Delay</th>
                     <th class="tracker-col-notes" scope="col">Comments</th>
-                    <th class="tracker-col-notes" scope="col">Reason for Delay</th>
+                    <th scope="col">June 25, 2026 Current List</th>
+                    <th scope="col">Separated from Certification</th>
+                    <th scope="col">Hired After July 1, 2026</th>
                     <th class="tracker-col-readiness tracker-locked-column" scope="col">Readiness <span title="Calculated field" aria-label="Calculated field">🔒</span></th>
                     <th class="tracker-col-actions" scope="col"><span class="sr-only">Actions</span></th>
                   </tr>
@@ -389,14 +403,14 @@
             <article class="panel method-card">
               <div class="method-number" aria-hidden="true">01</div>
               <p class="panel-kicker">Protected calculation</p>
-              <h3>Projected Certification</h3>
+              <h3>Projected and Forecast Dates</h3>
               <ol class="rule-list">
-                <li>Use the actual certification date when entered.</li>
-                <li>Otherwise use the assigned OJT date + <strong id="rule-ojt-days">21</strong> calendar days.</li>
-                <li>Otherwise use the safety class start date + <strong id="rule-training-days">35</strong> calendar days.</li>
-                <li>As a final fallback, use the hire or transfer date + <strong id="rule-hire-days">35</strong> calendar days.</li>
+                <li>Projected certification = hire or transfer date + <strong id="rule-hire-days">35</strong> calendar days.</li>
+                <li>Certification forecast = assigned OJT date + <strong id="rule-ojt-days">21</strong> calendar days.</li>
+                <li>If no OJT date is assigned, forecast from the best-guess SIDA date + <strong id="rule-badge-days">21</strong> calendar days.</li>
+                <li>If neither operational date is available, use the 35-day projected date as the baseline forecast.</li>
               </ol>
-              <p class="card-note">The hierarchy mirrors the five-week training path in the source tracker.</p>
+              <p class="card-note">Actual certification remains a separate input so variance to the projected date can be measured.</p>
             </article>
 
             <article class="panel method-card">
@@ -406,15 +420,19 @@
               <dl class="calculation-list">
                 <div>
                   <dt>Probation end</dt>
-                  <dd>Hire or transfer date + <strong id="rule-probation-days">90</strong> calendar days</dd>
+                  <dd>Hire or transfer date + <strong id="rule-probation-days">60</strong> calendar days</dd>
                 </div>
                 <div>
                   <dt>Safety class end</dt>
-                  <dd>Safety class start + <strong id="rule-class-days">4</strong> calendar days</dd>
+                  <dd>Hire or transfer date + <strong id="rule-class-days">3</strong> calendar days</dd>
                 </div>
                 <div>
-                  <dt>Progress</dt>
-                  <dd>20 percentage points for each completed weekly milestone</dd>
+                  <dt>Days in training</dt>
+                  <dd>Current date minus hire or transfer date</dd>
+                </div>
+                <div>
+                  <dt>Days +/- projected</dt>
+                  <dd>Projected certification date minus actual certification date</dd>
                 </div>
               </dl>
             </article>
@@ -425,7 +443,7 @@
               <h3>Attention States</h3>
               <ul class="status-key">
                 <li><span class="status-dot status-dot-delayed"></span><strong>Delayed</strong> — projection is past due.</li>
-                <li><span class="status-dot status-dot-blocked"></span><strong>Blocked</strong> — an operational prerequisite is marked No.</li>
+                <li><span class="status-dot status-dot-blocked"></span><strong>Blocked</strong> — a prerequisite has an issue or a weekly milestone is failed or behind.</li>
                 <li><span class="status-dot status-dot-risk"></span><strong>At risk</strong> — progress trails the schedule or projected certification is approaching.</li>
                 <li><span class="status-dot status-dot-good"></span><strong>On track</strong> — no current exception.</li>
               </ul>
@@ -436,14 +454,14 @@
             <div class="panel-heading">
               <div>
                 <p class="panel-kicker">GitHub Pages workflow</p>
-                <h3>Publish One Shared Roster</h3>
+                <h3>Public Aggregate, Private Roster</h3>
               </div>
             </div>
             <div class="workflow-steps">
-              <div><span>1</span><p>The published workbook snapshot and trainee roster load automatically when the page opens.</p></div>
-              <div><span>2</span><p>Export JSON after updates. Calculated fields are intentionally omitted.</p></div>
-              <div><span>3</span><p>Replace <code>data/trainees.json</code> in the GitHub repository and commit the change.</p></div>
-              <div><span>4</span><p>GitHub Pages republishes the dashboard; visitors load the same published data.</p></div>
+              <div><span>1</span><p>The page automatically loads aggregate counts from the current OJT Pipeline workbook.</p></div>
+              <div><span>2</span><p>Trainee edits stay in this browser unless they are exported.</p></div>
+              <div><span>3</span><p>JSON and CSV exports contain employee data and must be stored only in an approved private system.</p></div>
+              <div><span>4</span><p>Keep the public GitHub Pages repository aggregate-only until an authenticated backend is approved.</p></div>
             </div>
             <div class="workflow-actions">
               <button class="button button-secondary" type="button" id="reload-published-button">Reload published data</button>
@@ -465,7 +483,7 @@
 
     <footer class="site-footer">
       <p>SkyChefs · Internal training dashboard</p>
-      <p>Source structure: Progression Template and Template Trainee Tracker</p>
+      <p>Source structure: ORD Trainee Progression Tracker (2026) · OJT Pipeline</p>
     </footer>
 
     <dialog class="trainee-dialog" id="trainee-dialog" aria-labelledby="trainee-dialog-title">
@@ -483,16 +501,12 @@
         <div class="form-section">
           <div class="form-section-heading">
             <span>1</span>
-            <div><h3>Employee</h3><p>Identity and current employment status</p></div>
+            <div><h3>Core Tracker Fields</h3><p>Identity, position, source, and hire date</p></div>
           </div>
           <div class="form-grid form-grid-3">
             <label>
-              <span>Trainee name <em>*</em></span>
+              <span>Trainee <em>*</em></span>
               <input name="traineeName" autocomplete="name" required />
-            </label>
-            <label>
-              <span>Employee number</span>
-              <input name="employeeNumber" inputmode="numeric" />
             </label>
             <label>
               <span>Position <em>*</em></span>
@@ -501,6 +515,10 @@
             <label>
               <span>Status</span>
               <select name="status"></select>
+            </label>
+            <label>
+              <span>License class</span>
+              <select name="licenseClass"></select>
             </label>
             <label>
               <span>Source</span>
@@ -513,7 +531,12 @@
             <label class="calculated-field">
               <span>Probation end <span title="Calculated field">🔒</span></span>
               <input name="probationEndDate" type="date" readonly tabindex="-1" />
-              <small>Calculated from hire / transfer date</small>
+              <small>Hire / transfer date + 60 calendar days</small>
+            </label>
+            <label class="calculated-field">
+              <span>Days in training <span title="Calculated field">🔒</span></span>
+              <input name="daysInTraining" type="number" readonly tabindex="-1" />
+              <small>Recalculated from today's date</small>
             </label>
           </div>
         </div>
@@ -521,17 +544,53 @@
         <div class="form-section">
           <div class="form-section-heading">
             <span>2</span>
-            <div><h3>Training Schedule</h3><p>Dates, trainer, and current stage</p></div>
+            <div><h3>Access &amp; Prerequisites</h3><p>Class completion, badging, documents, and OJT assignment</p></div>
           </div>
           <div class="form-grid form-grid-3">
             <label>
-              <span>Safety class start</span>
-              <input name="safetyStartDate" type="date" />
+              <span>Class attendance</span>
+              <select name="classAttendance"></select>
             </label>
             <label class="calculated-field">
               <span>Safety class end <span title="Calculated field">🔒</span></span>
               <input name="safetyEndDate" type="date" readonly tabindex="-1" />
-              <small>Calculated as a five-day class</small>
+              <small>Hire / transfer date + 3 calendar days</small>
+            </label>
+            <label>
+              <span>Inflight door training (session W/F)</span>
+              <select name="inflightDoorTraining"></select>
+            </label>
+            <label>
+              <span>Dock training status</span>
+              <select name="dockTrainingStatus"></select>
+            </label>
+            <label>
+              <span>ADA certificate printed</span>
+              <select name="adaCert" data-yn></select>
+            </label>
+            <label>
+              <span>A.S.S.E.T. trailer</span>
+              <select name="assetTrailer" data-yn></select>
+            </label>
+            <label>
+              <span>Paperwork filled out</span>
+              <select name="paperworkFilled" data-yn></select>
+            </label>
+            <label>
+              <span>Fingerprint appointment</span>
+              <input name="fingerprintApt" placeholder="Date or appointment status" />
+            </label>
+            <label>
+              <span>Badge pickup, SIDA training, and DT stamp</span>
+              <input name="badgePickupStatus" placeholder="Enter current status" />
+            </label>
+            <label>
+              <span>SIDA badge status</span>
+              <select name="sidaBadgeStatus"></select>
+            </label>
+            <label>
+              <span>Best-guess SIDA date</span>
+              <input name="bestGuessSidaDate" type="date" />
             </label>
             <label>
               <span>Assigned OJT date</span>
@@ -545,39 +604,41 @@
               <span>OJT trainer schedule</span>
               <input name="trainerSchedule" placeholder="Mon–Fri · 06:00–14:30" />
             </label>
-            <label>
-              <span>Training stage</span>
-              <select name="trainingStage"></select>
-            </label>
-            <label>
-              <span>Actual certification date</span>
-              <input name="certificationDate" type="date" />
-            </label>
-            <label class="calculated-field">
-              <span>Projected certification <span title="Calculated field">🔒</span></span>
-              <input name="projectedCertificationDate" type="date" readonly tabindex="-1" />
-              <small id="projection-basis">Enter a source date to calculate</small>
-            </label>
           </div>
         </div>
 
         <div class="form-section">
           <div class="form-section-heading">
             <span>3</span>
-            <div><h3>Prerequisites</h3><p>Operational requirements before certification</p></div>
+            <div><h3>Training &amp; Certification</h3><p>Stage, certifier, and protected forecast outputs</p></div>
           </div>
           <div class="form-grid form-grid-3">
             <label>
-              <span>Dock training</span>
-              <select name="dockTraining" data-yn></select>
+              <span>Training stage</span>
+              <select name="trainingStage"></select>
             </label>
             <label>
-              <span>AOA badge</span>
-              <select name="aoaBadge" data-yn></select>
+              <span>Safety certifier</span>
+              <input name="safetyCertifier" />
             </label>
             <label>
-              <span>Customs seal</span>
-              <select name="customsSeal" data-yn></select>
+              <span>Date of certification</span>
+              <input name="certificationDate" type="date" />
+            </label>
+            <label class="calculated-field">
+              <span>Projected date for certification <span title="Calculated field">🔒</span></span>
+              <input name="projectedCertificationDate" type="date" readonly tabindex="-1" />
+              <small>Hire / transfer date + 35 calendar days</small>
+            </label>
+            <label class="calculated-field">
+              <span>Certification forecast <span title="Calculated field">🔒</span></span>
+              <input name="certificationForecastDate" type="date" readonly tabindex="-1" />
+              <small id="projection-basis">Enter an assigned OJT or best-guess SIDA date</small>
+            </label>
+            <label class="calculated-field">
+              <span>Days +/- projected certification <span title="Calculated field">🔒</span></span>
+              <input name="daysVsProjected" type="number" readonly tabindex="-1" />
+              <small>Projected date minus actual date</small>
             </label>
           </div>
         </div>
@@ -585,21 +646,21 @@
         <div class="form-section">
           <div class="form-section-heading">
             <span>4</span>
-            <div><h3>Five-Week Progression</h3><p>Mark each milestone when completed</p></div>
+            <div><h3>Five-Week Progression</h3><p>Use the workbook's operational status choices</p></div>
           </div>
           <div class="milestone-grid">
-            <label class="milestone-check"><input type="checkbox" name="week1" /><span><strong>Week 1</strong>Initial class &amp; truck familiarization</span></label>
-            <label class="milestone-check"><input type="checkbox" name="week2" /><span><strong>Week 2</strong>AOA &amp; airport familiarization</span></label>
-            <label class="milestone-check"><input type="checkbox" name="week3" /><span><strong>Week 3</strong>Full on-the-job training</span></label>
-            <label class="milestone-check"><input type="checkbox" name="week4" /><span><strong>Week 4</strong>OJT evaluation</span></label>
-            <label class="milestone-check"><input type="checkbox" name="week5" /><span><strong>Week 5</strong>Certification finalization</span></label>
+            <label class="milestone-check"><span><strong>Week 1</strong>Initial class &amp; truck familiarization</span><select name="week1"></select></label>
+            <label class="milestone-check"><span><strong>Week 2</strong>AOA &amp; airport familiarization</span><select name="week2"></select></label>
+            <label class="milestone-check"><span><strong>Week 3</strong>Full on-the-job training</span><select name="week3"></select></label>
+            <label class="milestone-check"><span><strong>Week 4</strong>OJT evaluation</span><select name="week4"></select></label>
+            <label class="milestone-check"><span><strong>Week 5</strong>Certification finalization</span><select name="week5"></select></label>
           </div>
         </div>
 
         <div class="form-section">
           <div class="form-section-heading">
             <span>5</span>
-            <div><h3>Qualifications &amp; Notes</h3><p>Aircraft sign-offs and exception context</p></div>
+            <div><h3>Qualifications, Outcomes &amp; Notes</h3><p>Aircraft sign-offs, cohort markers, and exception context</p></div>
           </div>
           <fieldset class="aircraft-fieldset">
             <legend>Aircraft qualifications</legend>
@@ -607,7 +668,7 @@
           </fieldset>
           <div class="form-grid form-grid-2 notes-grid">
             <label>
-              <span>Reason for delay</span>
+              <span>Reason for certification delay</span>
               <select name="delayReason"></select>
             </label>
             <label>
@@ -615,6 +676,14 @@
               <textarea name="comments" rows="3"></textarea>
             </label>
           </div>
+          <fieldset class="cohort-fieldset">
+            <legend>Workbook cohort markers</legend>
+            <div class="cohort-grid">
+              <label><input type="checkbox" name="currentList" /><span>June 25, 2026 current list</span></label>
+              <label><input type="checkbox" name="separatedFromCertification" /><span>Separated from certification</span></label>
+              <label><input type="checkbox" name="hiredAfterJuly1" /><span>Hired after July 1, 2026</span></label>
+            </div>
+          </fieldset>
         </div>
 
         <div class="form-error" id="form-error" role="alert"></div>

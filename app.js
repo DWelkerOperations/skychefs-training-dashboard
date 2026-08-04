@@ -1,36 +1,33 @@
 "use strict";
 
-const STORAGE_KEY = "skychefs-training-dashboard:v2";
+const STORAGE_KEY = "skychefs-training-dashboard:v3";
 const PUBLISHED_DATA_URL = "data/trainees.json";
 const SOURCE_SNAPSHOT_URL = "data/source-snapshot.json";
+const CURRENT_STATE_SUMMARY_URL = "data/current-state-summary.json";
 
 // Centralized business rules. These are deliberately not exposed as editable page inputs.
 const PROJECTION_RULES = Object.freeze({
-  probationDays: 90,
-  safetyClassEndOffsetDays: 4,
+  probationDays: 60,
+  safetyClassEndFromHireDays: 3,
   certificationFromAssignedOjtDays: 21,
-  certificationFromSafetyStartDays: 35,
+  certificationFromBadgeDays: 21,
   certificationFromHireDays: 35,
   attentionWindowDays: 14,
 });
 
 const OPTIONS = Object.freeze({
-  positions: ["CDL Driver", "NonCDL Driver", "Helper", "Guide"],
-  employmentStatuses: ["Good", "Certified", "Separated", "Demotion", "Lateral", "Light Duty"],
-  sources: ["Internal", "External"],
-  trainingStages: [
-    "Not started",
-    "Initial Class",
-    "Dock Training",
-    "AOA / Airport Familiarization",
-    "OJT",
-    "Evaluation",
-    "Certification Finalization",
-    "Certified",
-    "Other",
-  ],
-  yesNo: ["", "Y", "N", "Not required"],
-  aircraft: ["CRJ", "E75", "A319 / A320 / A321", "B737", "B757", "B767", "A380", "B747"],
+  positions: ["CDL", "Non-CDL", "Helper", "Commissary Driver", "Express", "Loader", "FL Coordinator", "Training Manager", "Dispatcher", "Training Supervisor"],
+  employmentStatuses: ["Attendance 1", "Attendance 2", "Attendance 3+", "Certified", "Class", "Failed Probation", "Good", "Light Duty", "LOA/OJI", "Transfer", "Not Hired", "Onboarding", "Resigned", "Watch", "Demotion"],
+  licenseClasses: ["", "Class A", "Class D"],
+  sources: ["External", "Internal", "Rehire"],
+  classAttendance: ["", "Current", "Completed"],
+  inflightDoorTraining: ["", "COM 2", "FRI 1", "FRI 2", "WED 1", "WED 2", "N/A"],
+  requirementStatuses: ["", "Pending", "In Process", "Completed", "Not Required"],
+  sidaStatuses: ["", "Pending", "Completed", "Issues — CDA", "Issues — CBP", "Issues — Other"],
+  trainingStages: ["", "AOA OJT", "Dock Familiarization", "Truck Familiarization", "OJT", "Training Stage", "Certified", "Transfer", "Terminated", "Stop"],
+  weeklyProgress: ["", "Not Started", "Current", "In Process", "Completed", "Failed", "Behind", "Behind / SIDA", "Behind / Other", "N/A"],
+  yesNo: ["", "Yes", "No", "Not Required"],
+  aircraft: ["CRJ", "E75", "A319 / A320 / A321", "B737"],
   delayReasons: [
     "",
     "Badge / access pending",
@@ -51,23 +48,25 @@ const STAFFING_BASELINE = Object.freeze([
   { position: "Helper", goal: 240, have: 160, need: 80 },
 ]);
 
-const INACTIVE_STATUSES = new Set(["Separated", "Demotion", "Lateral", "Light Duty"]);
+const INACTIVE_STATUSES = new Set(["Not Hired", "Light Duty", "Transfer", "Resigned", "Demotion", "Separated"]);
 const RISK_PRIORITY = Object.freeze({ Delayed: 0, Blocked: 1, "At risk": 2, "On track": 3, Certified: 4, Inactive: 5 });
 const STAGE_PROGRESS = Object.freeze({
-  "Not started": 0,
-  "Initial Class": 10,
-  "Dock Training": 20,
-  "AOA / Airport Familiarization": 40,
+  "": 0,
+  "Training Stage": 0,
+  "Dock Familiarization": 20,
+  "Truck Familiarization": 20,
+  "AOA OJT": 40,
   OJT: 60,
-  Evaluation: 80,
-  "Certification Finalization": 90,
   Certified: 100,
-  Other: 0,
+  Transfer: 0,
+  Terminated: 0,
+  Stop: 0,
 });
 
 const state = {
   trainees: [],
   sourceSnapshot: null,
+  currentStateSummary: null,
   dataMode: "published",
   activeView: "overview",
   overviewPosition: "all",
@@ -87,6 +86,7 @@ async function init() {
   buildFormOptions();
   applyRuleText();
   bindEvents();
+  await loadCurrentStateSummary();
   await loadSourceSnapshot();
   await loadInitialData();
 
@@ -229,7 +229,7 @@ function bindEvents() {
 function scrollTrackerToGroup(targetId) {
   const target = document.getElementById(targetId);
   if (!target || !elements.trackerScroller) return;
-  const stickyIdentityWidth = 446;
+  const stickyIdentityWidth = 284;
   const left = targetId === "tracker-group-outcomes"
     ? elements.trackerScroller.scrollWidth - elements.trackerScroller.clientWidth
     : Math.max(0, target.offsetLeft - stickyIdentityWidth);
@@ -239,9 +239,21 @@ function scrollTrackerToGroup(targetId) {
 function buildFormOptions() {
   setSelectOptions(elements.traineeForm.elements.position, OPTIONS.positions, "Select position");
   setSelectOptions(elements.traineeForm.elements.status, OPTIONS.employmentStatuses);
+  setSelectOptions(elements.traineeForm.elements.licenseClass, OPTIONS.licenseClasses, "Not recorded", true);
   setSelectOptions(elements.traineeForm.elements.source, OPTIONS.sources, "Select source");
-  setSelectOptions(elements.traineeForm.elements.trainingStage, OPTIONS.trainingStages, "Select stage");
+  setSelectOptions(elements.traineeForm.elements.trainingStage, OPTIONS.trainingStages, "Select stage", true);
+  setSelectOptions(elements.traineeForm.elements.classAttendance, OPTIONS.classAttendance, "Not recorded", true);
+  setSelectOptions(elements.traineeForm.elements.inflightDoorTraining, OPTIONS.inflightDoorTraining, "Not recorded", true);
+  setSelectOptions(elements.traineeForm.elements.dockTrainingStatus, OPTIONS.requirementStatuses, "Not recorded", true);
+  setSelectOptions(elements.traineeForm.elements.adaCert, OPTIONS.yesNo, "Not recorded", true);
+  setSelectOptions(elements.traineeForm.elements.assetTrailer, OPTIONS.yesNo, "Not recorded", true);
+  setSelectOptions(elements.traineeForm.elements.paperworkFilled, OPTIONS.yesNo, "Not recorded", true);
+  setSelectOptions(elements.traineeForm.elements.sidaBadgeStatus, OPTIONS.sidaStatuses, "Not recorded", true);
   setSelectOptions(elements.traineeForm.elements.delayReason, OPTIONS.delayReasons);
+
+  ["week1", "week2", "week3", "week4", "week5"].forEach((name) => {
+    setSelectOptions(elements.traineeForm.elements[name], OPTIONS.weeklyProgress, "Not recorded", true);
+  });
 
   document.querySelectorAll("[data-yn]").forEach((select) => {
     setSelectOptions(select, OPTIONS.yesNo, "Not recorded", true);
@@ -276,15 +288,26 @@ function setSelectOptions(select, values, placeholder = "", valuesIncludeBlank =
 function applyRuleText() {
   const map = {
     "rule-ojt-days": PROJECTION_RULES.certificationFromAssignedOjtDays,
-    "rule-training-days": PROJECTION_RULES.certificationFromSafetyStartDays,
+    "rule-badge-days": PROJECTION_RULES.certificationFromBadgeDays,
     "rule-hire-days": PROJECTION_RULES.certificationFromHireDays,
     "rule-probation-days": PROJECTION_RULES.probationDays,
-    "rule-class-days": PROJECTION_RULES.safetyClassEndOffsetDays,
+    "rule-class-days": PROJECTION_RULES.safetyClassEndFromHireDays,
   };
   Object.entries(map).forEach(([id, value]) => {
     const element = document.getElementById(id);
     if (element) element.textContent = value;
   });
+}
+
+async function loadCurrentStateSummary() {
+  try {
+    const response = await fetch(`${CURRENT_STATE_SUMMARY_URL}?v=${Date.now()}`, { cache: "no-store" });
+    if (!response.ok) throw new Error(`Current-state summary returned ${response.status}`);
+    state.currentStateSummary = await response.json();
+  } catch (error) {
+    console.warn("Current-state summary could not be loaded.", error);
+    state.currentStateSummary = null;
+  }
 }
 
 async function loadSourceSnapshot() {
@@ -352,27 +375,38 @@ function normalizeRecord(record = {}, index = 0) {
     employeeNumber: cleanText(record.employeeNumber),
     position: cleanText(record.position),
     status: cleanText(record.status) || "Good",
+    licenseClass: cleanText(record.licenseClass),
     source: cleanText(record.source),
     hireDate: normalizeDateString(record.hireDate),
-    safetyStartDate: normalizeDateString(record.safetyStartDate),
+    classAttendance: cleanText(record.classAttendance),
+    inflightDoorTraining: cleanText(record.inflightDoorTraining),
+    dockTrainingStatus: normalizeRequirementStatus(record.dockTrainingStatus || record.dockTraining),
+    adaCert: normalizeYesNo(record.adaCert),
+    assetTrailer: normalizeYesNo(record.assetTrailer),
+    paperworkFilled: normalizeYesNo(record.paperworkFilled),
+    fingerprintApt: cleanText(record.fingerprintApt),
+    badgePickupStatus: cleanText(record.badgePickupStatus),
+    sidaBadgeStatus: cleanText(record.sidaBadgeStatus),
+    bestGuessSidaDate: normalizeDateString(record.bestGuessSidaDate),
     assignedOjtDate: normalizeDateString(record.assignedOjtDate),
     trainerName: cleanText(record.trainerName),
     trainerSchedule: cleanText(record.trainerSchedule),
-    trainingStage: cleanText(record.trainingStage) || "Not started",
-    dockTraining: normalizeYesNo(record.dockTraining),
-    aoaBadge: normalizeYesNo(record.aoaBadge),
-    customsSeal: normalizeYesNo(record.customsSeal),
+    trainingStage: cleanText(record.trainingStage),
     milestones: {
-      week1: toBoolean(milestones.week1 ?? record.week1),
-      week2: toBoolean(milestones.week2 ?? record.week2),
-      week3: toBoolean(milestones.week3 ?? record.week3),
-      week4: toBoolean(milestones.week4 ?? record.week4),
-      week5: toBoolean(milestones.week5 ?? record.week5),
+      week1: normalizeWeeklyProgress(milestones.week1 ?? record.week1),
+      week2: normalizeWeeklyProgress(milestones.week2 ?? record.week2),
+      week3: normalizeWeeklyProgress(milestones.week3 ?? record.week3),
+      week4: normalizeWeeklyProgress(milestones.week4 ?? record.week4),
+      week5: normalizeWeeklyProgress(milestones.week5 ?? record.week5),
     },
     aircraft: [...new Set(recordAircraft.map(cleanText).filter(Boolean))],
+    safetyCertifier: cleanText(record.safetyCertifier),
     certificationDate: normalizeDateString(record.certificationDate),
     delayReason: cleanText(record.delayReason),
     comments: cleanText(record.comments),
+    currentList: toBoolean(record.currentList),
+    separatedFromCertification: toBoolean(record.separatedFromCertification),
+    hiredAfterJuly1: toBoolean(record.hiredAfterJuly1),
     demo: Boolean(record.demo),
     createdAt: cleanText(record.createdAt),
     updatedAt: cleanText(record.updatedAt),
@@ -394,8 +428,8 @@ function renderDataBadge() {
     elements.dataModeBadge.textContent = "Local Edits";
   } else if (state.trainees.length) {
     elements.dataModeBadge.textContent = "Published Roster";
-  } else if (state.sourceSnapshot) {
-    elements.dataModeBadge.textContent = "Workbook Data";
+  } else if (state.currentStateSummary || state.sourceSnapshot) {
+    elements.dataModeBadge.textContent = "Workbook Aggregate";
   } else if (state.dataMode === "unavailable") {
     elements.dataModeBadge.textContent = "Data Unavailable";
   } else {
@@ -421,6 +455,10 @@ function populateFilter(select, values, allLabel, selectedValue) {
 }
 
 function renderOverview() {
+  if (!state.trainees.length && state.currentStateSummary) {
+    renderCurrentStateOverview();
+    return;
+  }
   if (!state.trainees.length && state.sourceSnapshot) {
     renderSourceOverview();
     return;
@@ -456,6 +494,98 @@ function renderOverview() {
   renderStageBreakdown(active);
   renderStaffingBaseline();
   renderAttentionTable(attention);
+}
+
+function renderCurrentStateOverview() {
+  const summary = state.currentStateSummary;
+  const totals = summary.totals || {};
+  const sourceDate = summary.asOf ? formatDate(summary.asOf) : "the workbook snapshot date";
+
+  elements.overviewFilterCluster.classList.add("is-hidden");
+  elements.kpiActiveLabel.textContent = "Active trainees";
+  elements.kpiActive.textContent = formatNumber(totals.active);
+  elements.kpiActiveNote.textContent = `${formatNumber(totals.currentRoster)} people on the current-list cohort`;
+  elements.kpiOnTrackLabel.textContent = "Certified";
+  elements.kpiOnTrack.textContent = formatNumber(totals.certified);
+  elements.kpiOnTrackNote.textContent = "Certified within the current-list cohort";
+  elements.kpiDueLabel.textContent = "Certifications due";
+  elements.kpiDue.textContent = formatNumber(totals.dueNext30Days);
+  elements.kpiDueNote.textContent = "Next 30 days from workbook forecasts";
+  elements.kpiAttentionLabel.textContent = "Needs review";
+  elements.kpiAttention.textContent = formatNumber(totals.needsAttention);
+  elements.kpiAttentionNote.textContent = "Past-due, blocked, or at-risk records";
+  elements.kpiAttentionCard.classList.add("kpi-card-alert");
+  elements.kpiAttentionIcon.classList.add("kpi-icon-alert");
+  elements.kpiAttentionIcon.classList.remove("kpi-icon-good");
+  elements.kpiAttentionIcon.textContent = "!";
+
+  elements.overviewAsOf.textContent = `Aggregate OJT Pipeline snapshot as of ${sourceDate} · employee rows are not published`;
+  elements.forecastKicker.textContent = "OJT Pipeline";
+  elements.forecastTitle.textContent = "Certification Forecast";
+  elements.forecastMeta.textContent = "Next 8 Weeks";
+  elements.forecastChart.setAttribute("aria-label", "Aggregate certification forecast by week");
+  elements.stageKicker.textContent = "Current Pipeline";
+  elements.stageTitle.textContent = "Active Training Stage";
+  elements.staffingKicker.textContent = "Current Pipeline";
+  elements.staffingTitle.textContent = "Active Trainees by Position";
+  elements.staffingMeta.textContent = `${formatNumber(totals.active)} Active`;
+  elements.staffingSourceNote.textContent = `Counts come from the workbook's current-list markers. Names and employee-level rows are excluded from this public snapshot. Review note: ${formatNumber(totals.formulaErrorsObserved)} broken source formula was observed; the web rules are centralized and protected.`;
+  elements.attentionKicker.textContent = "Roster Context";
+  elements.attentionTitle.textContent = "Current-List Status Mix";
+  elements.attentionViewAll.classList.add("is-hidden");
+
+  renderCurrentStateForecast(summary.forecastWeeks || []);
+  renderAggregateBars(elements.stageBreakdown, summary.activeStageCounts || {}, totals.active);
+  renderAggregatePositions(summary.activePositionCounts || {}, totals.active);
+  renderAggregateStatusTable(summary.statusCounts || {}, totals.currentRoster);
+}
+
+function renderCurrentStateForecast(weeks) {
+  const max = Math.max(...weeks.map((week) => Number(week.certifications) || 0), 1);
+  elements.forecastChart.innerHTML = weeks.map((week) => {
+    const count = Number(week.certifications) || 0;
+    const height = count ? Math.max(10, Math.round((count / max) * 100)) : 4;
+    return `
+      <div class="forecast-week">
+        <div class="forecast-bar-wrap"><div class="forecast-bar ${count ? "" : "is-zero"}" style="height:${height}%"><span class="forecast-value">${count}</span></div></div>
+        <span class="forecast-label">Week ending<br />${escapeHtml(formatDate(week.weekEnding, { month: "short", day: "numeric", omitYear: true }))}</span>
+      </div>`;
+  }).join("");
+}
+
+function renderAggregateBars(container, values, total) {
+  container.innerHTML = Object.entries(values).map(([label, count]) => {
+    const percent = total ? Math.round((count / total) * 100) : 0;
+    return `
+      <div class="stage-row">
+        <div class="stage-row-heading"><span>${escapeHtml(label)}</span><span>${formatNumber(count)} · ${percent}%</span></div>
+        <div class="meter" aria-label="${escapeHtml(label)} ${percent} percent"><span style="width:${percent}%"></span></div>
+      </div>`;
+  }).join("");
+}
+
+function renderAggregatePositions(values, total) {
+  elements.staffingBaseline.classList.remove("is-regional");
+  elements.staffingBaseline.innerHTML = Object.entries(values).map(([label, count]) => {
+    const percent = total ? Math.round((count / total) * 100) : 0;
+    return `
+      <div class="staffing-row">
+        <span class="staffing-position">${escapeHtml(label)}</span>
+        <div class="staffing-track" aria-label="${escapeHtml(label)} ${percent} percent of active trainees"><span style="width:${percent}%"></span></div>
+        <span class="staffing-value"><strong>${formatNumber(count)}</strong> · ${percent}%</span>
+      </div>`;
+  }).join("");
+}
+
+function renderAggregateStatusTable(values, total) {
+  const rows = Object.entries(values);
+  elements.attentionTableHead.innerHTML = `<tr><th scope="col">Status</th><th scope="col">People</th><th scope="col">Share of current list</th></tr>`;
+  elements.attentionEmpty.classList.toggle("is-hidden", rows.length > 0);
+  elements.attentionTableBody.parentElement.parentElement.classList.toggle("is-hidden", rows.length === 0);
+  elements.attentionTableBody.innerHTML = rows.map(([label, count]) => {
+    const percent = total ? Math.round((count / total) * 100) : 0;
+    return `<tr><td><span class="person-name">${escapeHtml(label)}</span></td><td><strong>${formatNumber(count)}</strong></td><td>${percent}%</td></tr>`;
+  }).join("");
 }
 
 function renderSourceOverview() {
@@ -715,7 +845,7 @@ function renderTraineeTable() {
   const filtered = state.trainees
     .map(enrichRecord)
     .filter((record) => {
-      const haystack = [record.traineeName, record.employeeNumber, record.trainerName, record.position, record.trainingStage]
+      const haystack = [record.traineeName, record.trainerName, record.position, record.trainingStage, record.safetyCertifier]
         .join(" ")
         .toLowerCase();
       const searchMatch = !state.traineeSearch || haystack.includes(state.traineeSearch);
@@ -732,7 +862,7 @@ function renderTraineeTable() {
     const message = elements.traineeEmpty.querySelector("p");
     if (!state.trainees.length) {
       title.textContent = "No Trainee Records Found";
-      message.textContent = "The supplied tracker contains field definitions and dropdown values, but no trainee records. Add the first trainee when ready.";
+      message.textContent = "Employee rows are intentionally excluded from this public GitHub Pages site. Add records locally only after confirming an approved secure data workflow.";
     } else {
       title.textContent = "No Trainees Match These Filters";
       message.textContent = "Adjust the search or filters to see other records.";
@@ -740,50 +870,59 @@ function renderTraineeTable() {
   }
   elements.traineeTableBody.innerHTML = filtered
     .map((record) => {
-      const projectionText = record.projection.date ? formatDate(record.projection.date) : "Not available";
       const recordNumber = state.trainees.findIndex((item) => item.id === record.id) + 1;
       const hireDate = parseDate(record.hireDate);
-      const safetyStartDate = parseDate(record.safetyStartDate);
       const probationEndDate = hireDate ? addDays(hireDate, PROJECTION_RULES.probationDays) : null;
-      const safetyEndDate = safetyStartDate ? addDays(safetyStartDate, PROJECTION_RULES.safetyClassEndOffsetDays) : null;
+      const safetyEndDate = hireDate ? addDays(hireDate, PROJECTION_RULES.safetyClassEndFromHireDays) : null;
+      const daysInTraining = hireDate ? Math.max(0, daysBetween(hireDate, todayUtc())) : null;
+      const projected = calculateProjectedCertification(record);
+      const forecast = calculateCertificationForecast(record);
+      const daysVsProjected = calculateDaysVsProjected(record, projected.date);
       return `
         <tr>
           <td class="tracker-col-number">${recordNumber}</td>
           <td class="tracker-col-name"><span class="person-name">${escapeHtml(record.traineeName || "Unnamed trainee")}</span>${record.demo ? '<span class="person-meta">Example</span>' : ""}</td>
-          <td class="tracker-col-employee">${escapeHtml(record.employeeNumber || "—")}</td>
           <td>${escapeHtml(record.position || "—")}</td>
           <td>${escapeHtml(record.status || "—")}</td>
+          <td>${escapeHtml(record.licenseClass || "—")}</td>
           <td>${escapeHtml(record.source || "—")}</td>
           <td class="tracker-col-date">${trackerDateMarkup(record.hireDate)}</td>
           <td class="tracker-col-date tracker-locked-column">${calculatedDateMarkup(probationEndDate, `Hire or transfer + ${PROJECTION_RULES.probationDays} days`)}</td>
-          <td class="tracker-col-date">${trackerDateMarkup(record.safetyStartDate)}</td>
-          <td class="tracker-col-date tracker-locked-column">${calculatedDateMarkup(safetyEndDate, `Safety class start + ${PROJECTION_RULES.safetyClassEndOffsetDays} days`)}</td>
-          <td>${trackerFlagMarkup(record.dockTraining, "Dock training")}</td>
-          <td>${trackerFlagMarkup(record.aoaBadge, "AOA badge")}</td>
-          <td>${trackerFlagMarkup(record.customsSeal, "Customs seal")}</td>
+          <td class="tracker-locked-column">${daysInTraining ?? "—"}</td>
+          <td>${trackerStatusMarkup(record.classAttendance)}</td>
+          <td class="tracker-col-date tracker-locked-column">${calculatedDateMarkup(safetyEndDate, `Hire or transfer + ${PROJECTION_RULES.safetyClassEndFromHireDays} days`)}</td>
+          <td>${trackerStatusMarkup(record.inflightDoorTraining)}</td>
+          <td>${trackerStatusMarkup(record.dockTrainingStatus)}</td>
+          <td>${trackerFlagMarkup(record.adaCert, "ADA certificate")}</td>
+          <td>${trackerFlagMarkup(record.assetTrailer, "A.S.S.E.T. trailer")}</td>
+          <td>${trackerFlagMarkup(record.paperworkFilled, "Paperwork")}</td>
+          <td>${trackerTextMarkup(record.fingerprintApt)}</td>
+          <td>${trackerTextMarkup(record.badgePickupStatus)}</td>
+          <td>${trackerStatusMarkup(record.sidaBadgeStatus)}</td>
+          <td class="tracker-col-date">${trackerDateMarkup(record.bestGuessSidaDate)}</td>
           <td class="tracker-col-date">${trackerDateMarkup(record.assignedOjtDate)}</td>
           <td class="tracker-col-long">${escapeHtml(record.trainerName || "—")}</td>
           <td class="tracker-col-long">${escapeHtml(record.trainerSchedule || "—")}</td>
-          <td class="tracker-col-long">${escapeHtml(record.trainingStage || "Not started")}</td>
-          <td class="tracker-col-progress tracker-locked-column">${progressMarkup(record.progress, record.risk.label)}</td>
-          <td class="tracker-col-week">${trackerCheckMarkup(record.milestones.week1, "Week 1")}</td>
-          <td class="tracker-col-week">${trackerCheckMarkup(record.milestones.week2, "Week 2")}</td>
-          <td class="tracker-col-week">${trackerCheckMarkup(record.milestones.week3, "Week 3")}</td>
-          <td class="tracker-col-week">${trackerCheckMarkup(record.milestones.week4, "Week 4")}</td>
-          <td class="tracker-col-week">${trackerCheckMarkup(record.milestones.week5, "Week 5")}</td>
-          <td class="tracker-col-date tracker-locked-column"><span class="locked-date">${escapeHtml(projectionText)}</span><span class="cell-meta">${escapeHtml(record.projection.basis)}</span></td>
+          <td class="tracker-col-long">${escapeHtml(record.trainingStage || "—")}</td>
+          <td class="tracker-col-week">${trackerStatusMarkup(record.milestones.week1)}</td>
+          <td class="tracker-col-week">${trackerStatusMarkup(record.milestones.week2)}</td>
+          <td class="tracker-col-week">${trackerStatusMarkup(record.milestones.week3)}</td>
+          <td class="tracker-col-week">${trackerStatusMarkup(record.milestones.week4)}</td>
+          <td class="tracker-col-week">${trackerStatusMarkup(record.milestones.week5)}</td>
+          <td class="tracker-col-date tracker-locked-column">${calculatedDateMarkup(parseDate(projected.date), projected.basis)}</td>
+          <td class="tracker-col-date tracker-locked-column">${calculatedDateMarkup(parseDate(forecast.date), forecast.basis)}</td>
+          <td class="tracker-col-long">${escapeHtml(record.safetyCertifier || "—")}</td>
           <td class="tracker-col-aircraft">${trackerCheckMarkup(record.aircraft.includes("CRJ"), "CRJ")}</td>
           <td class="tracker-col-aircraft">${trackerCheckMarkup(record.aircraft.includes("E75"), "E75")}</td>
           <td class="tracker-col-aircraft">${trackerCheckMarkup(record.aircraft.includes("A319 / A320 / A321"), "A319 / A320 / A321")}</td>
           <td class="tracker-col-aircraft">${trackerCheckMarkup(record.aircraft.includes("B737"), "B737")}</td>
-          <td class="tracker-col-aircraft">${trackerCheckMarkup(record.aircraft.includes("B757"), "B757")}</td>
-          <td class="tracker-col-aircraft">${trackerCheckMarkup(record.aircraft.includes("B767"), "B767")}</td>
-          <td class="tracker-col-aircraft">${trackerCheckMarkup(record.aircraft.includes("B767"), "Second B767 source column")}</td>
-          <td class="tracker-col-aircraft">${trackerCheckMarkup(record.aircraft.includes("A380"), "A380")}</td>
-          <td class="tracker-col-aircraft">${trackerCheckMarkup(record.aircraft.includes("B747"), "B747")}</td>
           <td class="tracker-col-date">${trackerDateMarkup(record.certificationDate)}</td>
-          <td class="tracker-col-notes">${trackerTextMarkup(record.comments)}</td>
+          <td class="tracker-locked-column">${daysVsProjected ?? "—"}</td>
           <td class="tracker-col-notes">${trackerTextMarkup(record.delayReason)}</td>
+          <td class="tracker-col-notes">${trackerTextMarkup(record.comments)}</td>
+          <td>${trackerCheckMarkup(record.currentList, "Current list")}</td>
+          <td>${trackerCheckMarkup(record.separatedFromCertification, "Separated from certification")}</td>
+          <td>${trackerCheckMarkup(record.hiredAfterJuly1, "Hired after July 1")}</td>
           <td class="tracker-col-readiness tracker-locked-column"><span class="status-pill ${riskClass(record.risk.label)}">${escapeHtml(record.risk.label)}</span><span class="cell-meta">${escapeHtml(record.risk.issue)}</span></td>
           <td class="tracker-col-actions"><button class="row-action" type="button" data-edit-id="${escapeHtml(record.id)}" aria-label="Edit ${escapeHtml(record.traineeName || "trainee")}">✎</button></td>
         </tr>`;
@@ -801,10 +940,24 @@ function calculatedDateMarkup(value, basis) {
 }
 
 function trackerFlagMarkup(value, label) {
-  const normalized = value || "";
-  const display = normalized === "Y" ? "Yes" : normalized === "N" ? "No" : normalized === "Not required" ? "N/R" : "—";
-  const className = normalized === "Y" ? "is-complete" : normalized === "N" ? "is-blocked" : normalized === "Not required" ? "is-neutral" : "";
+  const normalized = normalizeYesNo(value);
+  const display = normalized === "Yes" ? "Yes" : normalized === "No" ? "No" : normalized === "Not Required" ? "N/R" : "—";
+  const className = normalized === "Yes" ? "is-complete" : normalized === "No" ? "is-blocked" : normalized === "Not Required" ? "is-neutral" : "";
   return `<span class="tracker-flag ${className}" title="${escapeHtml(`${label}: ${normalized || "not recorded"}`)}">${escapeHtml(display)}</span>`;
+}
+
+function trackerStatusMarkup(value) {
+  const text = cleanText(value);
+  if (!text) return "—";
+  const normalized = text.toLowerCase();
+  const className = /complete/.test(normalized)
+    ? "is-complete"
+    : /failed|behind|issues/.test(normalized)
+      ? "is-blocked"
+      : /current|process|pending/.test(normalized)
+        ? "is-current"
+        : "is-neutral";
+  return `<span class="tracker-flag ${className}" title="${escapeHtml(text)}">${escapeHtml(text)}</span>`;
 }
 
 function trackerCheckMarkup(complete, label) {
@@ -829,26 +982,11 @@ function progressMarkup(progress, riskLabel) {
   return `<div class="progress-inline"><div class="meter"><span style="width:${progress}%;background:${color}"></span></div><strong>${progress}%</strong></div>`;
 }
 
-function prerequisiteMarkup(record) {
-  const items = [
-    ["Dock", record.dockTraining],
-    ["AOA", record.aoaBadge],
-    ["Seal", record.customsSeal],
-  ];
-  return `<div class="prereq-list">${items
-    .map(([label, value]) => {
-      const className = value === "Y" || value === "Not required" ? "is-complete" : value === "N" ? "is-blocked" : "";
-      const title = `${label}: ${value || "not recorded"}`;
-      return `<span class="prereq-chip ${className}" title="${escapeHtml(title)}">${escapeHtml(label)}</span>`;
-    })
-    .join("")}</div>`;
-}
-
 function enrichRecord(record) {
   const projection = calculateProjection(record);
   const progress = calculateProgress(record);
   const isCertified = Boolean(record.certificationDate) || record.status === "Certified" || record.trainingStage === "Certified";
-  const isInactive = INACTIVE_STATUSES.has(record.status);
+  const isInactive = INACTIVE_STATUSES.has(record.status) || record.separatedFromCertification;
   const isActive = !isCertified && !isInactive;
   const risk = calculateRisk(record, projection, progress, { isCertified, isInactive, isActive });
   return { ...record, projection, progress, isCertified, isInactive, isActive, risk };
@@ -858,30 +996,46 @@ function calculateProjection(record) {
   if (record.certificationDate) {
     return { date: record.certificationDate, basis: "Actual certification date" };
   }
-  if (record.assignedOjtDate) {
-    return {
-      date: toIsoDate(addDays(parseDate(record.assignedOjtDate), PROJECTION_RULES.certificationFromAssignedOjtDays)),
-      basis: `Assigned OJT + ${PROJECTION_RULES.certificationFromAssignedOjtDays} days`,
-    };
-  }
-  if (record.safetyStartDate) {
-    return {
-      date: toIsoDate(addDays(parseDate(record.safetyStartDate), PROJECTION_RULES.certificationFromSafetyStartDays)),
-      basis: `Safety class start + ${PROJECTION_RULES.certificationFromSafetyStartDays} days`,
-    };
-  }
+  return calculateCertificationForecast(record);
+}
+
+function calculateProjectedCertification(record) {
   if (record.hireDate) {
     return {
       date: toIsoDate(addDays(parseDate(record.hireDate), PROJECTION_RULES.certificationFromHireDays)),
       basis: `Hire / transfer + ${PROJECTION_RULES.certificationFromHireDays} days`,
     };
   }
+  return { date: "", basis: "Hire / transfer date required" };
+}
+
+function calculateCertificationForecast(record) {
+  if (record.assignedOjtDate) {
+    return {
+      date: toIsoDate(addDays(parseDate(record.assignedOjtDate), PROJECTION_RULES.certificationFromAssignedOjtDays)),
+      basis: `Assigned OJT + ${PROJECTION_RULES.certificationFromAssignedOjtDays} days`,
+    };
+  }
+  if (record.bestGuessSidaDate) {
+    return {
+      date: toIsoDate(addDays(parseDate(record.bestGuessSidaDate), PROJECTION_RULES.certificationFromBadgeDays)),
+      basis: `Best-guess SIDA + ${PROJECTION_RULES.certificationFromBadgeDays} days`,
+    };
+  }
+  const projected = calculateProjectedCertification(record);
+  if (projected.date) return { ...projected, basis: `${projected.basis} (baseline)` };
   return { date: "", basis: "Source date required" };
+}
+
+function calculateDaysVsProjected(record, projectedDate = calculateProjectedCertification(record).date) {
+  const projected = parseDate(projectedDate);
+  const actual = parseDate(record.certificationDate);
+  return projected && actual ? daysBetween(actual, projected) : null;
 }
 
 function calculateProgress(record) {
   if (record.certificationDate || record.status === "Certified" || record.trainingStage === "Certified") return 100;
-  const milestoneProgress = Object.values(record.milestones || {}).filter(Boolean).length * 20;
+  const milestoneProgress = Object.values(record.milestones || {}).filter((value) => normalizeWeeklyProgress(value) === "Completed").length * 20;
   const stageProgress = STAGE_PROGRESS[record.trainingStage] ?? 0;
   return clamp(Math.max(milestoneProgress, stageProgress), 0, 100);
 }
@@ -898,12 +1052,16 @@ function calculateRisk(record, projection, progress, flags) {
   }
 
   const missingPrerequisites = [
-    ["dock training", record.dockTraining],
-    ["AOA badge", record.aoaBadge],
-    ["customs seal", record.customsSeal],
+    ["dock training", record.dockTrainingStatus],
+    ["ADA certificate", record.adaCert],
+    ["A.S.S.E.T.", record.assetTrailer],
+    ["paperwork", record.paperworkFilled],
+    ["SIDA badge", record.sidaBadgeStatus],
   ]
-    .filter(([, value]) => value === "N")
+    .filter(([, value]) => /^(No|Failed|Issues)/i.test(value || ""))
     .map(([label]) => label);
+  const failedMilestone = Object.values(record.milestones || {}).some((value) => /Failed|Behind/i.test(value || ""));
+  if (failedMilestone) missingPrerequisites.push("weekly progression");
   if (missingPrerequisites.length) {
     return { label: "Blocked", issue: `Pending ${missingPrerequisites.join(", ")}` };
   }
@@ -927,10 +1085,10 @@ function calculateRisk(record, projection, progress, flags) {
 }
 
 function calculateExpectedProgress(record) {
-  if (!record.safetyStartDate) return 0;
-  const elapsed = daysBetween(parseDate(record.safetyStartDate), todayUtc());
+  if (!record.hireDate) return 0;
+  const elapsed = daysBetween(parseDate(record.hireDate), todayUtc());
   if (elapsed <= 0) return 0;
-  const raw = Math.floor((elapsed / PROJECTION_RULES.certificationFromSafetyStartDays) * 5) * 20;
+  const raw = Math.floor((elapsed / PROJECTION_RULES.certificationFromHireDays) * 5) * 20;
   return clamp(raw, 0, 100);
 }
 
@@ -980,19 +1138,26 @@ function openTraineeDialog(record = null) {
     const fields = [
       "id",
       "traineeName",
-      "employeeNumber",
       "position",
       "status",
+      "licenseClass",
       "source",
       "hireDate",
-      "safetyStartDate",
+      "classAttendance",
+      "inflightDoorTraining",
+      "dockTrainingStatus",
+      "adaCert",
+      "assetTrailer",
+      "paperworkFilled",
+      "fingerprintApt",
+      "badgePickupStatus",
+      "sidaBadgeStatus",
+      "bestGuessSidaDate",
       "assignedOjtDate",
       "trainerName",
       "trainerSchedule",
       "trainingStage",
-      "dockTraining",
-      "aoaBadge",
-      "customsSeal",
+      "safetyCertifier",
       "certificationDate",
       "delayReason",
       "comments",
@@ -1000,15 +1165,18 @@ function openTraineeDialog(record = null) {
     fields.forEach((name) => {
       if (elements.traineeForm.elements[name]) elements.traineeForm.elements[name].value = record[name] ?? "";
     });
-    Object.entries(record.milestones || {}).forEach(([name, checked]) => {
-      if (elements.traineeForm.elements[name]) elements.traineeForm.elements[name].checked = Boolean(checked);
+    Object.entries(record.milestones || {}).forEach(([name, value]) => {
+      if (elements.traineeForm.elements[name]) elements.traineeForm.elements[name].value = value || "";
+    });
+    ["currentList", "separatedFromCertification", "hiredAfterJuly1"].forEach((name) => {
+      elements.traineeForm.elements[name].checked = Boolean(record[name]);
     });
     elements.traineeForm.querySelectorAll('input[name="aircraft"]').forEach((checkbox) => {
       checkbox.checked = record.aircraft.includes(checkbox.value);
     });
   } else {
     elements.traineeForm.elements.status.value = "Good";
-    elements.traineeForm.elements.trainingStage.value = "Not started";
+    elements.traineeForm.elements.trainingStage.value = "";
   }
 
   updateCalculatedFormFields();
@@ -1022,17 +1190,20 @@ function closeTraineeDialog() {
 
 function updateCalculatedFormFields() {
   const formRecord = recordFromForm(false);
-  const projection = calculateProjection(formRecord);
+  const projected = calculateProjectedCertification(formRecord);
+  const forecast = calculateCertificationForecast(formRecord);
   const hire = parseDate(formRecord.hireDate);
-  const safetyStart = parseDate(formRecord.safetyStartDate);
   elements.traineeForm.elements.probationEndDate.value = hire
     ? toIsoDate(addDays(hire, PROJECTION_RULES.probationDays))
     : "";
-  elements.traineeForm.elements.safetyEndDate.value = safetyStart
-    ? toIsoDate(addDays(safetyStart, PROJECTION_RULES.safetyClassEndOffsetDays))
+  elements.traineeForm.elements.daysInTraining.value = hire ? Math.max(0, daysBetween(hire, todayUtc())) : "";
+  elements.traineeForm.elements.safetyEndDate.value = hire
+    ? toIsoDate(addDays(hire, PROJECTION_RULES.safetyClassEndFromHireDays))
     : "";
-  elements.traineeForm.elements.projectedCertificationDate.value = projection.date;
-  elements.projectionBasis.textContent = projection.basis;
+  elements.traineeForm.elements.projectedCertificationDate.value = projected.date;
+  elements.traineeForm.elements.certificationForecastDate.value = forecast.date;
+  elements.traineeForm.elements.daysVsProjected.value = calculateDaysVsProjected(formRecord, projected.date) ?? "";
+  elements.projectionBasis.textContent = forecast.basis;
 }
 
 function recordFromForm(includeMetadata = true) {
@@ -1042,30 +1213,40 @@ function recordFromForm(includeMetadata = true) {
   const record = normalizeRecord({
     id: form.elements.id.value || createId(),
     traineeName: form.elements.traineeName.value,
-    employeeNumber: form.elements.employeeNumber.value,
     position: form.elements.position.value,
     status: form.elements.status.value,
+    licenseClass: form.elements.licenseClass.value,
     source: form.elements.source.value,
     hireDate: form.elements.hireDate.value,
-    safetyStartDate: form.elements.safetyStartDate.value,
+    classAttendance: form.elements.classAttendance.value,
+    inflightDoorTraining: form.elements.inflightDoorTraining.value,
+    dockTrainingStatus: form.elements.dockTrainingStatus.value,
+    adaCert: form.elements.adaCert.value,
+    assetTrailer: form.elements.assetTrailer.value,
+    paperworkFilled: form.elements.paperworkFilled.value,
+    fingerprintApt: form.elements.fingerprintApt.value,
+    badgePickupStatus: form.elements.badgePickupStatus.value,
+    sidaBadgeStatus: form.elements.sidaBadgeStatus.value,
+    bestGuessSidaDate: form.elements.bestGuessSidaDate.value,
     assignedOjtDate: form.elements.assignedOjtDate.value,
     trainerName: form.elements.trainerName.value,
     trainerSchedule: form.elements.trainerSchedule.value,
     trainingStage: form.elements.trainingStage.value,
-    dockTraining: form.elements.dockTraining.value,
-    aoaBadge: form.elements.aoaBadge.value,
-    customsSeal: form.elements.customsSeal.value,
     milestones: {
-      week1: form.elements.week1.checked,
-      week2: form.elements.week2.checked,
-      week3: form.elements.week3.checked,
-      week4: form.elements.week4.checked,
-      week5: form.elements.week5.checked,
+      week1: form.elements.week1.value,
+      week2: form.elements.week2.value,
+      week3: form.elements.week3.value,
+      week4: form.elements.week4.value,
+      week5: form.elements.week5.value,
     },
     aircraft: [...form.querySelectorAll('input[name="aircraft"]:checked')].map((input) => input.value),
+    safetyCertifier: form.elements.safetyCertifier.value,
     certificationDate: form.elements.certificationDate.value,
     delayReason: form.elements.delayReason.value,
     comments: form.elements.comments.value,
+    currentList: form.elements.currentList.checked,
+    separatedFromCertification: form.elements.separatedFromCertification.checked,
+    hiredAfterJuly1: form.elements.hiredAfterJuly1.checked,
     demo: false,
     createdAt: existing?.createdAt || now,
     updatedAt: now,
@@ -1073,7 +1254,7 @@ function recordFromForm(includeMetadata = true) {
   if (record.certificationDate) {
     record.status = "Certified";
     record.trainingStage = "Certified";
-    record.milestones = { week1: true, week2: true, week3: true, week4: true, week5: true };
+    record.milestones = { week1: "Completed", week2: "Completed", week3: "Completed", week4: "Completed", week5: "Completed" };
   }
   if (!includeMetadata) {
     record.createdAt = existing?.createdAt || "";
@@ -1121,84 +1302,110 @@ function deleteCurrentTrainee() {
 function saveLocalData() {
   localStorage.setItem(
     STORAGE_KEY,
-    JSON.stringify({ schemaVersion: 2, savedAt: new Date().toISOString(), trainees: state.trainees }),
+    JSON.stringify({ schemaVersion: 3, savedAt: new Date().toISOString(), trainees: state.trainees }),
   );
   state.dataMode = "local";
 }
 
 function exportJson() {
   const payload = {
-    schemaVersion: 2,
+    schemaVersion: 3,
     generatedAt: new Date().toISOString(),
     projectionRules: PROJECTION_RULES,
     trainees: state.trainees.map(stripDerivedFields),
   };
   downloadFile("trainees.json", JSON.stringify(payload, null, 2), "application/json");
-  showToast("JSON exported. Replace data/trainees.json in the repository to publish it.");
+  showToast("JSON exported. It contains employee data—store it only in an approved private system.");
 }
 
 function exportCsv() {
   const headers = [
     "#",
-    "Trainee Name",
-    "Employee Number",
+    "Trainee",
     "Position",
     "Status",
+    "License Class",
     "Source",
     "Hire Date (Or Transfer Date)",
     "Probation End Date",
-    "Safety Initial Class Start Date",
-    "Safety Initial Class End Date",
-    "Dock Training",
-    "AOA Badge",
-    "Customs Seal",
+    "Days In Training",
+    "Class Attendance",
+    "Safety Class End Date",
+    "Inflight Door Training (session W/F)",
+    "Dock Training Status",
+    "ADA Certificate (Printed)",
+    "A.S.S.E.T. (Trailer)",
+    "Paperwork Filled Out",
+    "Fingerprint Appointment",
+    "Badge Pickup, SIDA Training, and DT Customer Stamp",
+    "SIDA Badge Status",
+    "Best-Guess SIDA Date",
     "Assigned OJT Date",
-    "OJT Trainer Name",
-    "OJT Trainer Schedule",
+    "OJT Trainer",
+    "Schedule",
     "Training Stage",
-    "WK 1: Initial Class Room Training & Truck Familiarization",
-    "WK 2: Off-Site AOA training (if applicable) and Airport Familiarization",
+    "WK 1: Initial Classroom Training & Truck Familiarization",
+    "WK 2: Off-Site AOA Training and Airport Familiarization",
     "WK 3: Full On-the-Job Training (OJT)",
     "WK 4: On-the-Job Training (OJT) / EVALUATION",
     "WK 5: Certification and Training Finalization",
-    "Projected Certification Date",
+    "Projected Date for Certification",
+    "Certification Forecast (21 Days from Badging)",
+    "Safety Certifier",
     ...OPTIONS.aircraft,
-    "Date of Cert.",
+    "Date of Certification",
+    "Days +/- Projected Certification",
+    "Reason for Certification Delay",
     "Comments",
-    "Reason for delay List",
+    "June 25, 2026 Current List",
+    "Separated from Certification",
+    "Hired After July 1, 2026",
   ];
   const rows = state.trainees.map((record, index) => {
-    const projection = calculateProjection(record);
+    const projected = calculateProjectedCertification(record);
+    const forecast = calculateCertificationForecast(record);
     const hire = parseDate(record.hireDate);
-    const safetyStart = parseDate(record.safetyStartDate);
     return [
       index + 1,
       record.traineeName,
-      record.employeeNumber,
       record.position,
       record.status,
+      record.licenseClass,
       record.source,
       record.hireDate,
       hire ? toIsoDate(addDays(hire, PROJECTION_RULES.probationDays)) : "",
-      record.safetyStartDate,
-      safetyStart ? toIsoDate(addDays(safetyStart, PROJECTION_RULES.safetyClassEndOffsetDays)) : "",
-      record.dockTraining,
-      record.aoaBadge,
-      record.customsSeal,
+      hire ? Math.max(0, daysBetween(hire, todayUtc())) : "",
+      record.classAttendance,
+      hire ? toIsoDate(addDays(hire, PROJECTION_RULES.safetyClassEndFromHireDays)) : "",
+      record.inflightDoorTraining,
+      record.dockTrainingStatus,
+      record.adaCert,
+      record.assetTrailer,
+      record.paperworkFilled,
+      record.fingerprintApt,
+      record.badgePickupStatus,
+      record.sidaBadgeStatus,
+      record.bestGuessSidaDate,
       record.assignedOjtDate,
       record.trainerName,
       record.trainerSchedule,
       record.trainingStage,
-      boolCsv(record.milestones.week1),
-      boolCsv(record.milestones.week2),
-      boolCsv(record.milestones.week3),
-      boolCsv(record.milestones.week4),
-      boolCsv(record.milestones.week5),
-      projection.date,
+      record.milestones.week1,
+      record.milestones.week2,
+      record.milestones.week3,
+      record.milestones.week4,
+      record.milestones.week5,
+      projected.date,
+      forecast.date,
+      record.safetyCertifier,
       ...OPTIONS.aircraft.map((aircraft) => boolCsv(record.aircraft.includes(aircraft))),
       record.certificationDate,
-      record.comments,
+      calculateDaysVsProjected(record, projected.date) ?? "",
       record.delayReason,
+      record.comments,
+      boolCsv(record.currentList),
+      boolCsv(record.separatedFromCertification),
+      boolCsv(record.hiredAfterJuly1),
     ];
   });
   const csv = [headers, ...rows].map((row) => row.map(csvEscape).join(",")).join("\r\n");
@@ -1211,24 +1418,34 @@ function stripDerivedFields(record) {
   return {
     id: normalized.id,
     traineeName: normalized.traineeName,
-    employeeNumber: normalized.employeeNumber,
     position: normalized.position,
     status: normalized.status,
+    licenseClass: normalized.licenseClass,
     source: normalized.source,
     hireDate: normalized.hireDate,
-    safetyStartDate: normalized.safetyStartDate,
+    classAttendance: normalized.classAttendance,
+    inflightDoorTraining: normalized.inflightDoorTraining,
+    dockTrainingStatus: normalized.dockTrainingStatus,
+    adaCert: normalized.adaCert,
+    assetTrailer: normalized.assetTrailer,
+    paperworkFilled: normalized.paperworkFilled,
+    fingerprintApt: normalized.fingerprintApt,
+    badgePickupStatus: normalized.badgePickupStatus,
+    sidaBadgeStatus: normalized.sidaBadgeStatus,
+    bestGuessSidaDate: normalized.bestGuessSidaDate,
     assignedOjtDate: normalized.assignedOjtDate,
     trainerName: normalized.trainerName,
     trainerSchedule: normalized.trainerSchedule,
     trainingStage: normalized.trainingStage,
-    dockTraining: normalized.dockTraining,
-    aoaBadge: normalized.aoaBadge,
-    customsSeal: normalized.customsSeal,
     milestones: normalized.milestones,
     aircraft: normalized.aircraft,
+    safetyCertifier: normalized.safetyCertifier,
     certificationDate: normalized.certificationDate,
     delayReason: normalized.delayReason,
     comments: normalized.comments,
+    currentList: normalized.currentList,
+    separatedFromCertification: normalized.separatedFromCertification,
+    hiredAfterJuly1: normalized.hiredAfterJuly1,
     demo: normalized.demo,
     createdAt: normalized.createdAt,
     updatedAt: normalized.updatedAt,
@@ -1238,6 +1455,7 @@ function stripDerivedFields(record) {
 async function reloadPublishedData() {
   if (state.dataMode === "local" && !window.confirm("Discard local edits and reload the published repository data?")) return;
   localStorage.removeItem(STORAGE_KEY);
+  await loadCurrentStateSummary();
   await loadSourceSnapshot();
   await loadPublishedData();
   showToast("Published workbook data reloaded.");
@@ -1345,10 +1563,38 @@ function signedNumber(value) {
 
 function normalizeYesNo(value) {
   const text = cleanText(value).toLowerCase();
-  if (["y", "yes", "true", "1", "complete", "completed"].includes(text)) return "Y";
-  if (["n", "no", "false", "0", "incomplete"].includes(text)) return "N";
-  if (["not required", "n/a", "na"].includes(text)) return "Not required";
+  if (["y", "yes", "true", "1", "complete", "completed"].includes(text)) return "Yes";
+  if (["n", "no", "false", "0", "incomplete"].includes(text)) return "No";
+  if (["not required", "n/a", "na"].includes(text)) return "Not Required";
   return "";
+}
+
+function normalizeRequirementStatus(value) {
+  const text = cleanText(value);
+  const yesNo = normalizeYesNo(text);
+  if (yesNo === "Yes") return "Completed";
+  if (yesNo === "No") return "Pending";
+  if (yesNo === "Not Required") return "Not Required";
+  if (/^in process/i.test(text)) return "In Process";
+  if (/^complete/i.test(text)) return "Completed";
+  if (/^pending/i.test(text)) return "Pending";
+  return text;
+}
+
+function normalizeWeeklyProgress(value) {
+  if (value === true) return "Completed";
+  if (value === false || value == null) return "";
+  const text = cleanText(value);
+  if (/^complete/i.test(text)) return "Completed";
+  if (/^not started/i.test(text)) return "Not Started";
+  if (/^in process/i.test(text)) return "In Process";
+  if (/^current/i.test(text)) return "Current";
+  if (/^behind\/?sida/i.test(text)) return "Behind / SIDA";
+  if (/^behind\/?other/i.test(text)) return "Behind / Other";
+  if (/^behind/i.test(text)) return "Behind";
+  if (/^failed/i.test(text)) return "Failed";
+  if (/^(n\/a|na)$/i.test(text)) return "N/A";
+  return text;
 }
 
 function toBoolean(value) {
@@ -1372,7 +1618,7 @@ function clamp(value, min, max) {
 }
 
 function boolCsv(value) {
-  return value ? "Y" : "N";
+  return value ? "Yes" : "No";
 }
 
 function csvEscape(value) {
