@@ -1,5 +1,7 @@
 # SkyChefs Training Progression Dashboard
 
+[View the live dashboard](https://dwelkeroperations.github.io/skychefs-training-dashboard/)
+
 A static, GitHub Pages-ready dashboard built from the structure of:
 
 - `Progression Template.xlsb`
