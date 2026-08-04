@@ -7,7 +7,7 @@ A static, GitHub Pages-ready dashboard built from the structure of:
 - `Progression Template.xlsb`
 - `Template Trainee Tracker.xlsx`
 
-The site has an overall visual dashboard, a trainee input table, a protected calculation model, CSV/JSON import and export, and a documented publishing workflow. No build step or external JavaScript package is required.
+The site automatically loads a published snapshot extracted from both source workbooks. It has an overall visual dashboard, a trainee input table, protected calculations, CSV/JSON export, and a documented publishing workflow. No build step or external JavaScript package is required.
 
 ## Run locally
 
@@ -17,7 +17,7 @@ From this directory:
 python3 -m http.server 8000
 ```
 
-Open `http://localhost:8000`. A web server is required because browsers block `fetch()` of `data/trainees.json` from a `file://` URL.
+Open `http://localhost:8000`. A web server is required because browsers block `fetch()` of the published JSON data from a `file://` URL.
 
 ## Publish with GitHub Pages
 
@@ -31,13 +31,16 @@ GitHub Pages availability and privacy controls depend on the organization's GitH
 
 ## Data workflow
 
-The bundled `data/trainees.json` contains clearly labeled example records only.
+The page loads `data/source-snapshot.json` and `data/trainees.json` automatically. No browser file import is required.
 
+- `data/source-snapshot.json` contains aggregate staffing, forecast, region, and station information extracted from the supplied workbooks.
+- The supplied trainee tracker contains headers and dropdown values but no trainee rows, so `data/trainees.json` starts with an empty roster.
 - Edits made in **Trainee input** are stored in the current browser's `localStorage`.
 - **Export JSON** produces a replacement for `data/trainees.json`.
 - Commit that replacement file to publish one shared, read-only roster.
-- **Import CSV / JSON** accepts the tracker headers from the source Excel template. Save the tracker as CSV before importing it.
 - Calculated fields are omitted from JSON and rebuilt in the browser. They cannot be overwritten through the input form.
+
+GitHub Pages cannot read files from a user's Downloads folder after deployment. To refresh workbook information, regenerate `data/source-snapshot.json` from the approved source files and publish the updated snapshot.
 
 GitHub Pages is a static host. It does not provide authenticated, simultaneous multi-user data entry. A real shared input workflow requires an approved backend or data source. Do not put live employee data in a public repository.
 
@@ -61,14 +64,15 @@ The rules are centralized in `PROJECTION_RULES` near the top of `app.js`. Change
 
 - The trainee tracker is an empty template; it does not contain a current people roster.
 - Its five weekly columns define the training path used by the web application.
-- The Progression Template baseline dated February 25, 2026 contains goals of 227 CDL drivers, 72 non-CDL drivers, and 240 helpers, with 138, 39, and 160 shown as “have.” Those baseline figures are labeled and kept separate from live trainee KPIs.
+- The Progression Template snapshot contains driver certification forecasts, TDY counts, position goals, regional staffing totals, and station gaps. Workbook dates remain visible in the dashboard so forecast values are not mistaken for current live headcount.
 - The source workbooks are not copied into this repository.
 
 ## Files
 
 - `index.html` — page structure and accessible forms.
 - `styles.css` — responsive presentation using the approved SkyChefs logo color and neutral UI colors.
-- `app.js` — calculations, rendering, filters, imports, exports, and local persistence.
+- `app.js` — calculations, rendering, filters, exports, automatic data loading, and local persistence.
+- `data/source-snapshot.json` — extracted aggregate workbook information used by the overview.
 - `data/trainees.json` — published roster source.
 - `assets/skychefs-logo-approved.svg` — unmodified approved SkyChefs logo.
 - `dashboard-goal.md` — reusable implementation goal prompt.

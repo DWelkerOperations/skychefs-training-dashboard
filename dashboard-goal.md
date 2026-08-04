@@ -17,27 +17,23 @@ Give leaders a fast overall view of training progress and give training coordina
 ## Required views
 
 1. **Overview homepage**
-   - Active trainee count.
-   - On-track rate.
-   - Certifications projected in the next 30 days.
-   - Delayed, blocked, or at-risk trainee count.
-   - Eight-week certification forecast using Thursday week-ending buckets, matching the progression template.
-   - Training-stage distribution.
-   - Action list of people needing attention.
-   - Clearly labeled staffing baseline from the progression template, kept separate from current trainee KPIs.
+   - Automatically load aggregate information extracted from the supplied workbooks; do not require the visitor to import a file.
+   - When the published trainee roster is empty, show the workbook driver forecast, staffing need and variance, TDY totals, position goals, regional staffing, and stations with the largest open-position gaps.
+   - When trainee records exist, show active trainee count, on-track rate, certifications projected in the next 30 days, training stages, and people needing attention.
+   - Keep workbook dates visible so forecast values are not mistaken for live headcount.
 
 2. **Trainee input tab**
    - Search and filters.
    - A people table with position, source, training stage, progress, prerequisites, projected certification, and readiness.
    - Add/edit form based on the tracker fields: trainee name, employee number, position, status, source, hire/transfer date, safety class date, dock training, AOA badge, customs seal, OJT assignment, trainer, schedule, training stage, five weekly milestones, aircraft qualifications, actual certification date, delay reason, and comments.
    - Clearly gray and lock all derived date fields.
-   - CSV import compatible with the source tracker headers.
    - CSV and JSON export.
 
 3. **Rules and publishing tab**
    - Explain the formulas in plain language.
    - Explain browser-local persistence.
-   - Explain how to replace `data/trainees.json` and republish through GitHub Pages.
+   - Explain how `data/source-snapshot.json` and `data/trainees.json` load automatically.
+   - Explain how to replace published JSON and republish through GitHub Pages.
    - Warn that static GitHub Pages cannot provide safe simultaneous multi-user editing without an authenticated backend.
 
 ## Protected calculation rules
@@ -64,11 +60,11 @@ Treat the day offsets as centrally managed business assumptions. Do not make the
 
 ## Data and privacy requirements
 
-- Ship only unmistakable example records until an approved roster is supplied.
+- Do not manufacture trainee records when the supplied tracker is empty; present a clear empty state and allow direct entry.
 - Never copy the source workbooks into the public site.
 - Do not expose employee data in a public GitHub repository or public Pages site.
-- Persist browser edits locally and make the UI state explicit: Example data, Published data, Local edits, or Data unavailable.
-- Recalculate all derived values after every load, import, or edit. Do not accept imported projected dates as authoritative.
+- Persist browser edits locally and make the UI state explicit: Workbook data, Published data, Local edits, or Data unavailable.
+- Recalculate all derived values after every load or edit. Do not accept projected dates as editable source facts.
 
 ## Quality and acceptance criteria
 
@@ -78,6 +74,5 @@ Treat the day offsets as centrally managed business assumptions. Do not make the
 - Usable with keyboard navigation and screen readers; dialogs, tabs, labels, tables, and status messages have accessible semantics.
 - Handles an empty roster without broken cards or charts.
 - Prevents editing calculated dates through the user interface.
-- Correctly parses quoted CSV content and imports the tracker header names.
 - Exports source facts to JSON and includes derived fields only in the human-readable CSV output.
 - Uses the approved SkyChefs logo file without modification.

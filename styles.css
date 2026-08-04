@@ -659,6 +659,10 @@ textarea:read-only {
   gap: 12px;
 }
 
+.staffing-baseline.is-regional .staffing-row {
+  grid-template-columns: 90px minmax(70px, 1fr) 132px;
+}
+
 .staffing-position {
   font-size: 0.82rem;
   font-weight: 750;

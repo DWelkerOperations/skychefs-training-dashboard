@@ -8,7 +8,7 @@
       content="SkyChefs training progression dashboard for OJT pipeline tracking and certification forecasting."
     />
     <title>Training Progression Dashboard | SkyChefs</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><circle cx=%2250%22 cy=%2250%22 r=%2246%22 fill=%22%23ed2630%22/><path d=%22M31 51h38M50 32v38%22 stroke=%22white%22 stroke-width=%2210%22 stroke-linecap=%22round%22/></svg>" />
+    <link rel="icon" href="assets/skychefs-logo-approved.svg" type="image/svg+xml" />
     <link rel="stylesheet" href="styles.css" />
     <script src="app.js" defer></script>
   </head>
@@ -94,7 +94,7 @@
               <h2>Training pipeline health</h2>
               <p class="page-description" id="overview-as-of">Calculated from the published trainee roster.</p>
             </div>
-            <div class="filter-cluster" aria-label="Overview filters">
+            <div class="filter-cluster" id="overview-filter-cluster" aria-label="Overview filters">
               <label>
                 <span>Position</span>
                 <select id="overview-position-filter">
@@ -114,7 +114,7 @@
             <article class="kpi-card">
               <div class="kpi-icon kpi-icon-neutral" aria-hidden="true">◎</div>
               <div>
-                <p class="kpi-label">Active trainees</p>
+                <p class="kpi-label" id="kpi-active-label">Active trainees</p>
                 <p class="kpi-value" id="kpi-active">0</p>
                 <p class="kpi-note" id="kpi-active-note">Across all positions</p>
               </div>
@@ -122,7 +122,7 @@
             <article class="kpi-card">
               <div class="kpi-icon kpi-icon-good" aria-hidden="true">✓</div>
               <div>
-                <p class="kpi-label">On track</p>
+                <p class="kpi-label" id="kpi-on-track-label">On track</p>
                 <p class="kpi-value" id="kpi-on-track">0%</p>
                 <p class="kpi-note" id="kpi-on-track-note">0 active trainees</p>
               </div>
@@ -130,15 +130,15 @@
             <article class="kpi-card">
               <div class="kpi-icon kpi-icon-neutral" aria-hidden="true">↗</div>
               <div>
-                <p class="kpi-label">Certifications due</p>
+                <p class="kpi-label" id="kpi-due-label">Certifications due</p>
                 <p class="kpi-value" id="kpi-due">0</p>
-                <p class="kpi-note">Next 30 days</p>
+                <p class="kpi-note" id="kpi-due-note">Next 30 days</p>
               </div>
             </article>
-            <article class="kpi-card kpi-card-alert">
-              <div class="kpi-icon kpi-icon-alert" aria-hidden="true">!</div>
+            <article class="kpi-card kpi-card-alert" id="kpi-attention-card">
+              <div class="kpi-icon kpi-icon-alert" id="kpi-attention-icon" aria-hidden="true">!</div>
               <div>
-                <p class="kpi-label">Needs attention</p>
+                <p class="kpi-label" id="kpi-attention-label">Needs attention</p>
                 <p class="kpi-value" id="kpi-attention">0</p>
                 <p class="kpi-note" id="kpi-attention-note">Delayed, at risk, or blocked</p>
               </div>
@@ -149,10 +149,10 @@
             <article class="panel panel-wide">
               <div class="panel-heading">
                 <div>
-                  <p class="panel-kicker">Outlook</p>
-                  <h3>Projected certifications</h3>
+                  <p class="panel-kicker" id="forecast-kicker">Outlook</p>
+                  <h3 id="forecast-title">Projected certifications</h3>
                 </div>
-                <span class="panel-meta">8-week forecast</span>
+                <span class="panel-meta" id="forecast-meta">8-week forecast</span>
               </div>
               <div class="forecast-chart" id="forecast-chart" aria-label="Projected certifications by week"></div>
             </article>
@@ -160,8 +160,8 @@
             <article class="panel">
               <div class="panel-heading">
                 <div>
-                  <p class="panel-kicker">Pipeline</p>
-                  <h3>Training stage</h3>
+                  <p class="panel-kicker" id="stage-kicker">Pipeline</p>
+                  <h3 id="stage-title">Training stage</h3>
                 </div>
               </div>
               <div class="stage-breakdown" id="stage-breakdown"></div>
@@ -172,13 +172,13 @@
             <article class="panel">
               <div class="panel-heading">
                 <div>
-                  <p class="panel-kicker">Source workbook baseline</p>
-                  <h3>Staffing progression</h3>
+                  <p class="panel-kicker" id="staffing-kicker">Source workbook baseline</p>
+                  <h3 id="staffing-title">Staffing progression</h3>
                 </div>
-                <span class="panel-meta">Updated Feb 25, 2026</span>
+                <span class="panel-meta" id="staffing-meta">Updated Feb 25, 2026</span>
               </div>
               <div class="staffing-baseline" id="staffing-baseline"></div>
-              <p class="source-note">
+              <p class="source-note" id="staffing-source-note">
                 Reference goals and “have” counts come from the Progression Template. They are kept separate
                 from live trainee KPIs to avoid presenting the dated baseline as current headcount.
               </p>
@@ -187,14 +187,14 @@
             <article class="panel panel-wide">
               <div class="panel-heading">
                 <div>
-                  <p class="panel-kicker">Action list</p>
-                  <h3>People needing attention</h3>
+                  <p class="panel-kicker" id="attention-kicker">Action list</p>
+                  <h3 id="attention-title">People needing attention</h3>
                 </div>
-                <button class="text-button" type="button" data-view-target="trainees">View all trainees →</button>
+                <button class="text-button" id="attention-view-all" type="button" data-view-target="trainees">View all trainees →</button>
               </div>
               <div class="table-scroller compact-table-scroller">
                 <table class="attention-table">
-                  <thead>
+                  <thead id="attention-table-head">
                     <tr>
                       <th scope="col">Trainee</th>
                       <th scope="col">Issue</th>
@@ -233,20 +233,18 @@
               </p>
             </div>
             <div class="button-row">
-              <button class="button button-secondary" type="button" id="import-data-button">Import CSV / JSON</button>
               <button class="button button-secondary" type="button" id="export-csv-button">Export CSV</button>
               <button class="button button-secondary" type="button" id="export-json-button">Export JSON</button>
               <button class="button button-primary" type="button" data-open-trainee>＋ Add trainee</button>
-              <input class="sr-only" id="import-data-input" type="file" accept=".csv,.json,text/csv,application/json" />
             </div>
           </div>
 
           <div class="notice notice-info" role="note">
             <span class="notice-icon" aria-hidden="true">i</span>
             <div>
-              <strong>Browser edits are saved on this device.</strong>
-              To publish one shared roster on GitHub Pages, export JSON and replace
-              <code>data/trainees.json</code> in the repository. The Rules &amp; publishing tab explains the workflow.
+              <strong>Workbook information loads automatically.</strong>
+              The supplied trainee tracker contains no people rows, so this tab starts empty. New trainee records are
+              saved on this device; export JSON to publish a shared roster through the repository.
             </div>
           </div>
 
@@ -379,7 +377,7 @@
               </div>
             </div>
             <div class="workflow-steps">
-              <div><span>1</span><p>Maintain the roster in the Trainee input tab or import the Excel tracker as CSV.</p></div>
+              <div><span>1</span><p>The published workbook snapshot and trainee roster load automatically when the page opens.</p></div>
               <div><span>2</span><p>Export JSON after updates. Calculated fields are intentionally omitted.</p></div>
               <div><span>3</span><p>Replace <code>data/trainees.json</code> in the GitHub repository and commit the change.</p></div>
               <div><span>4</span><p>GitHub Pages republishes the dashboard; visitors load the same published data.</p></div>

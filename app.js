@@ -1,7 +1,8 @@
 "use strict";
 
-const STORAGE_KEY = "skychefs-training-dashboard:v1";
+const STORAGE_KEY = "skychefs-training-dashboard:v2";
 const PUBLISHED_DATA_URL = "data/trainees.json";
+const SOURCE_SNAPSHOT_URL = "data/source-snapshot.json";
 
 // Centralized business rules. These are deliberately not exposed as editable page inputs.
 const PROJECTION_RULES = Object.freeze({
@@ -66,6 +67,7 @@ const STAGE_PROGRESS = Object.freeze({
 
 const state = {
   trainees: [],
+  sourceSnapshot: null,
   dataMode: "published",
   activeView: "overview",
   overviewPosition: "all",
@@ -85,7 +87,7 @@ async function init() {
   buildFormOptions();
   applyRuleText();
   bindEvents();
-  renderStaffingBaseline();
+  await loadSourceSnapshot();
   await loadInitialData();
 
   const requestedView = window.location.hash.replace("#", "");
@@ -97,22 +99,41 @@ function cacheElements() {
     "data-mode-badge",
     "trainee-tab-count",
     "overview-as-of",
+    "overview-filter-cluster",
     "overview-position-filter",
     "overview-source-filter",
+    "kpi-active-label",
     "kpi-active",
     "kpi-active-note",
+    "kpi-on-track-label",
     "kpi-on-track",
     "kpi-on-track-note",
+    "kpi-due-label",
     "kpi-due",
+    "kpi-due-note",
+    "kpi-attention-card",
+    "kpi-attention-icon",
+    "kpi-attention-label",
     "kpi-attention",
     "kpi-attention-note",
+    "forecast-kicker",
+    "forecast-title",
+    "forecast-meta",
     "forecast-chart",
+    "stage-kicker",
+    "stage-title",
     "stage-breakdown",
+    "staffing-kicker",
+    "staffing-title",
+    "staffing-meta",
     "staffing-baseline",
+    "staffing-source-note",
+    "attention-kicker",
+    "attention-title",
+    "attention-view-all",
+    "attention-table-head",
     "attention-table-body",
     "attention-empty",
-    "import-data-button",
-    "import-data-input",
     "export-csv-button",
     "export-json-button",
     "trainee-search",
@@ -187,8 +208,6 @@ function bindEvents() {
   elements.traineeForm.addEventListener("change", updateCalculatedFormFields);
   elements.deleteTraineeButton.addEventListener("click", deleteCurrentTrainee);
 
-  elements.importDataButton.addEventListener("click", () => elements.importDataInput.click());
-  elements.importDataInput.addEventListener("change", importDataFile);
   elements.exportCsvButton.addEventListener("click", exportCsv);
   elements.exportJsonButton.addEventListener("click", exportJson);
   elements.reloadPublishedButton.addEventListener("click", reloadPublishedData);
@@ -251,6 +270,17 @@ function applyRuleText() {
     const element = document.getElementById(id);
     if (element) element.textContent = value;
   });
+}
+
+async function loadSourceSnapshot() {
+  try {
+    const response = await fetch(`${SOURCE_SNAPSHOT_URL}?v=${Date.now()}`, { cache: "no-store" });
+    if (!response.ok) throw new Error(`Workbook snapshot returned ${response.status}`);
+    state.sourceSnapshot = await response.json();
+  } catch (error) {
+    console.warn("Workbook snapshot could not be loaded.", error);
+    state.sourceSnapshot = null;
+  }
 }
 
 async function loadInitialData() {
@@ -343,15 +373,16 @@ function renderAll() {
 }
 
 function renderDataBadge() {
-  const allDemo = state.trainees.length > 0 && state.trainees.every((record) => record.demo);
   elements.dataModeBadge.classList.toggle("is-local", state.dataMode === "local");
 
   if (state.dataMode === "local") {
     elements.dataModeBadge.textContent = "Local edits";
+  } else if (state.trainees.length) {
+    elements.dataModeBadge.textContent = "Published roster";
+  } else if (state.sourceSnapshot) {
+    elements.dataModeBadge.textContent = "Workbook data";
   } else if (state.dataMode === "unavailable") {
     elements.dataModeBadge.textContent = "Data unavailable";
-  } else if (allDemo) {
-    elements.dataModeBadge.textContent = "Example data";
   } else {
     elements.dataModeBadge.textContent = "Published data";
   }
@@ -375,6 +406,12 @@ function populateFilter(select, values, allLabel, selectedValue) {
 }
 
 function renderOverview() {
+  if (!state.trainees.length && state.sourceSnapshot) {
+    renderSourceOverview();
+    return;
+  }
+
+  restoreTraineeOverviewChrome();
   const filtered = state.trainees.filter((record) => {
     const positionMatch = state.overviewPosition === "all" || record.position === state.overviewPosition;
     const sourceMatch = state.overviewSource === "all" || record.source === state.overviewSource;
@@ -402,7 +439,165 @@ function renderOverview() {
 
   renderForecast(active);
   renderStageBreakdown(active);
+  renderStaffingBaseline();
   renderAttentionTable(attention);
+}
+
+function renderSourceOverview() {
+  const snapshot = state.sourceSnapshot;
+  const driverWeeks = Array.isArray(snapshot.driverWeekly) ? snapshot.driverWeekly : [];
+  const latest = driverWeeks.at(-1) || {};
+  const sourceUpdated = snapshot.sources?.progression?.updatedDate;
+
+  elements.overviewFilterCluster.classList.add("is-hidden");
+  elements.kpiActiveLabel.textContent = "Certified drivers";
+  elements.kpiActive.textContent = formatNumber(latest.certified);
+  elements.kpiActiveNote.textContent = `${formatNumber(latest.total)} including forecast certifications`;
+  elements.kpiOnTrackLabel.textContent = "Drivers with TDY";
+  elements.kpiOnTrack.textContent = formatNumber(latest.totalWithTdy);
+  elements.kpiOnTrackNote.textContent = `${formatNumber(latest.total)} drivers + ${formatNumber(latest.badgedTdy)} TDY`;
+  elements.kpiDueLabel.textContent = "Staffing need";
+  elements.kpiDue.textContent = formatNumber(latest.staffingNeed);
+  elements.kpiDueNote.textContent = "Driver requirement in the forecast";
+  elements.kpiAttentionLabel.textContent = "Variance to need";
+  elements.kpiAttention.textContent = signedNumber(latest.variance);
+  elements.kpiAttentionNote.textContent = latest.variance >= 0 ? "Above the forecast staffing need" : "Below the forecast staffing need";
+  elements.kpiAttentionCard.classList.toggle("kpi-card-alert", latest.variance < 0);
+  elements.kpiAttentionIcon.classList.toggle("kpi-icon-alert", latest.variance < 0);
+  elements.kpiAttentionIcon.classList.toggle("kpi-icon-good", latest.variance >= 0);
+  elements.kpiAttentionIcon.textContent = latest.variance >= 0 ? "✓" : "!";
+
+  const forecastThrough = latest.date ? formatDate(latest.date) : "the last workbook period";
+  elements.overviewAsOf.textContent = `Loaded automatically from the supplied workbooks · forecast through ${forecastThrough}`;
+  elements.forecastKicker.textContent = "Workbook outlook";
+  elements.forecastTitle.textContent = "New driver certifications";
+  elements.forecastMeta.textContent = "Last 8 workbook weeks";
+  elements.forecastChart.setAttribute("aria-label", "New driver certifications by workbook week");
+  elements.stageKicker.textContent = "Progression baseline";
+  elements.stageTitle.textContent = "Progress to position goals";
+  elements.staffingKicker.textContent = "Pivot detail";
+  elements.staffingTitle.textContent = "Regional staffing snapshot";
+  elements.staffingMeta.textContent = sourceUpdated ? `Source updated ${formatDate(sourceUpdated)}` : "Workbook data";
+  elements.staffingSourceNote.textContent = "Employees, staffing need, open positions, and prehires are loaded from the Progression Template workbook snapshot.";
+  elements.attentionKicker.textContent = "Largest gaps";
+  elements.attentionTitle.textContent = "Stations by open positions";
+  elements.attentionViewAll.classList.add("is-hidden");
+
+  renderSourceForecast(driverWeeks);
+  renderSourcePositionGoals(snapshot.positionGoals || []);
+  renderSourceRegions(snapshot.regionSummary || []);
+  renderSourceStations(snapshot.topStationsByOpenings || []);
+}
+
+function restoreTraineeOverviewChrome() {
+  elements.overviewFilterCluster.classList.remove("is-hidden");
+  elements.kpiActiveLabel.textContent = "Active trainees";
+  elements.kpiOnTrackLabel.textContent = "On track";
+  elements.kpiDueLabel.textContent = "Certifications due";
+  elements.kpiDueNote.textContent = "Next 30 days";
+  elements.kpiAttentionLabel.textContent = "Needs attention";
+  elements.kpiAttentionCard.classList.add("kpi-card-alert");
+  elements.kpiAttentionIcon.classList.add("kpi-icon-alert");
+  elements.kpiAttentionIcon.classList.remove("kpi-icon-good");
+  elements.kpiAttentionIcon.textContent = "!";
+  elements.forecastKicker.textContent = "Outlook";
+  elements.forecastTitle.textContent = "Projected certifications";
+  elements.forecastMeta.textContent = "8-week forecast";
+  elements.forecastChart.setAttribute("aria-label", "Projected certifications by week");
+  elements.stageKicker.textContent = "Pipeline";
+  elements.stageTitle.textContent = "Training stage";
+  elements.staffingKicker.textContent = "Source workbook baseline";
+  elements.staffingTitle.textContent = "Staffing progression";
+  elements.staffingMeta.textContent = "Updated Feb 25, 2026";
+  elements.staffingSourceNote.textContent = "Reference goals and “have” counts come from the Progression Template. They are kept separate from live trainee KPIs to avoid presenting the dated baseline as current headcount.";
+  elements.attentionKicker.textContent = "Action list";
+  elements.attentionTitle.textContent = "People needing attention";
+  elements.attentionViewAll.classList.remove("is-hidden");
+  elements.attentionTableHead.innerHTML = `
+    <tr>
+      <th scope="col">Trainee</th>
+      <th scope="col">Issue</th>
+      <th scope="col">Progress</th>
+      <th scope="col">Projected cert.</th>
+      <th scope="col"><span class="sr-only">Edit</span></th>
+    </tr>`;
+  elements.staffingBaseline.classList.remove("is-regional");
+}
+
+function renderSourceForecast(driverWeeks) {
+  const weeks = driverWeeks
+    .filter((week) => Number.isFinite(week.newHireCertifications))
+    .slice(-8);
+  const max = Math.max(...weeks.map((week) => week.newHireCertifications), 1);
+  elements.forecastChart.innerHTML = weeks
+    .map((week) => {
+      const count = week.newHireCertifications;
+      const height = count ? Math.max(10, Math.round((count / max) * 100)) : 4;
+      return `
+        <div class="forecast-week">
+          <div class="forecast-bar-wrap">
+            <div class="forecast-bar ${count ? "" : "is-zero"}" style="height:${height}%">
+              <span class="forecast-value">${formatNumber(count)}</span>
+            </div>
+          </div>
+          <span class="forecast-label">Week ending<br />${escapeHtml(formatDate(week.date, { month: "short", day: "numeric", omitYear: true }))}</span>
+        </div>`;
+    })
+    .join("");
+}
+
+function renderSourcePositionGoals(positionGoals) {
+  elements.stageBreakdown.innerHTML = positionGoals
+    .map((item) => {
+      const percent = item.goal ? Math.min(100, Math.round((item.have / item.goal) * 100)) : 0;
+      return `
+        <div class="stage-row">
+          <div class="stage-row-heading"><span>${escapeHtml(item.position)}</span><span>${formatNumber(item.have)} / ${formatNumber(item.goal)} · ${formatNumber(item.need)} need</span></div>
+          <div class="meter" aria-label="${escapeHtml(item.position)} ${percent} percent of goal"><span style="width:${percent}%"></span></div>
+        </div>`;
+    })
+    .join("");
+}
+
+function renderSourceRegions(regions) {
+  elements.staffingBaseline.classList.add("is-regional");
+  elements.staffingBaseline.innerHTML = regions
+    .map((region) => {
+      const percent = region.needed ? Math.min(100, Math.round((region.employees / region.needed) * 100)) : 0;
+      return `
+        <div class="staffing-row">
+          <span class="staffing-position">${escapeHtml(region.region)}</span>
+          <div class="staffing-track" aria-label="${escapeHtml(region.region)} ${percent}% staffed"><span style="width:${percent}%"></span></div>
+          <span class="staffing-value"><strong>${formatNumber(region.employees)}</strong> / ${formatNumber(region.needed)}<br />${formatNumber(region.openPositions)} open · ${formatNumber(region.prehire)} prehire</span>
+        </div>`;
+    })
+    .join("");
+}
+
+function renderSourceStations(stations) {
+  const rows = stations.slice(0, 6);
+  elements.attentionTableHead.innerHTML = `
+    <tr>
+      <th scope="col">Station</th>
+      <th scope="col">Region</th>
+      <th scope="col">Employees / need</th>
+      <th scope="col">Open positions</th>
+      <th scope="col">Prehire</th>
+    </tr>`;
+  elements.attentionEmpty.classList.toggle("is-hidden", rows.length > 0);
+  elements.attentionTableBody.parentElement.parentElement.classList.toggle("is-hidden", rows.length === 0);
+  elements.attentionTableBody.innerHTML = rows
+    .map(
+      (station) => `
+        <tr>
+          <td><span class="person-name">${escapeHtml(station.station)}</span></td>
+          <td>${escapeHtml(station.region)}</td>
+          <td><strong>${formatNumber(station.employees)}</strong> / ${formatNumber(station.needed)}</td>
+          <td><span class="status-pill status-delayed">${formatNumber(station.openPositions)} open</span></td>
+          <td>${formatNumber(station.prehire)}</td>
+        </tr>`,
+    )
+    .join("");
 }
 
 function renderForecast(activeRecords) {
@@ -518,6 +713,17 @@ function renderTraineeTable() {
   elements.recordCount.textContent = `${filtered.length} trainee${filtered.length === 1 ? "" : "s"}`;
   elements.traineeEmpty.classList.toggle("is-hidden", filtered.length > 0);
   elements.traineeTableBody.parentElement.parentElement.classList.toggle("is-hidden", filtered.length === 0);
+  if (!filtered.length) {
+    const title = elements.traineeEmpty.querySelector("h3");
+    const message = elements.traineeEmpty.querySelector("p");
+    if (!state.trainees.length) {
+      title.textContent = "No trainee rows were found in the supplied tracker";
+      message.textContent = "The workbook contains the field structure and dropdowns only. Add the first trainee here when you are ready.";
+    } else {
+      title.textContent = "No trainees match these filters";
+      message.textContent = "Adjust the search or filters to see other records.";
+    }
+  }
   elements.traineeTableBody.innerHTML = filtered
     .map((record) => {
       const projectionText = record.projection.date ? formatDate(record.projection.date) : "Not available";
@@ -839,123 +1045,14 @@ function deleteCurrentTrainee() {
 function saveLocalData() {
   localStorage.setItem(
     STORAGE_KEY,
-    JSON.stringify({ schemaVersion: 1, savedAt: new Date().toISOString(), trainees: state.trainees }),
+    JSON.stringify({ schemaVersion: 2, savedAt: new Date().toISOString(), trainees: state.trainees }),
   );
   state.dataMode = "local";
 }
 
-async function importDataFile(event) {
-  const file = event.target.files?.[0];
-  event.target.value = "";
-  if (!file) return;
-
-  try {
-    const text = await file.text();
-    let imported;
-    if (file.name.toLowerCase().endsWith(".json")) {
-      const parsed = JSON.parse(text);
-      imported = normalizeCollection(parsed.trainees ?? parsed);
-    } else {
-      imported = normalizeCollection(csvToRecords(text));
-    }
-    if (!imported.length) throw new Error("No trainee rows were found in the selected file.");
-    if (state.trainees.length && !window.confirm(`Replace the current ${state.trainees.length} records with ${imported.length} imported records?`)) return;
-    state.trainees = imported.map((record) => ({ ...record, demo: false, updatedAt: new Date().toISOString() }));
-    saveLocalData();
-    renderAll();
-    showToast(`${imported.length} trainee record${imported.length === 1 ? "" : "s"} imported.`);
-  } catch (error) {
-    window.alert(`Import failed: ${error.message}`);
-  }
-}
-
-function csvToRecords(text) {
-  const rows = parseCsv(text).filter((row) => row.some((cell) => cleanText(cell)));
-  if (rows.length < 2) return [];
-  const headers = rows[0].map(normalizeHeader);
-  const findIndex = (...aliases) => headers.findIndex((header) => aliases.map(normalizeHeader).includes(header));
-  const get = (row, ...aliases) => {
-    const index = findIndex(...aliases);
-    return index >= 0 ? row[index] : "";
-  };
-
-  return rows.slice(1).map((row, index) => {
-    const aircraft = OPTIONS.aircraft.filter((aircraftName) => {
-      const aliases = aircraftName === "A319 / A320 / A321" ? ["A319 A320 A321", aircraftName] : [aircraftName];
-      return toBoolean(get(row, ...aliases));
-    });
-    return {
-      id: createId(`import-${index + 1}`),
-      traineeName: get(row, "Trainee Name", "Name"),
-      employeeNumber: get(row, "Employee Number", "Employee ID"),
-      position: get(row, "Position"),
-      status: get(row, "Status") || "Good",
-      source: get(row, "Source"),
-      hireDate: get(row, "Hire Date (Or Transfer Date)", "Hire Date", "Transfer Date"),
-      safetyStartDate: get(row, "Safety Initial Class Start Date", "Safety Class Start"),
-      assignedOjtDate: get(row, "Assigned OJT Date", "OJT Date"),
-      trainerName: get(row, "OJT Trainer Name", "Trainer Name"),
-      trainerSchedule: get(row, "OJT Trainer Schedule", "Trainer Schedule"),
-      trainingStage: get(row, "Training Stage") || "Not started",
-      dockTraining: get(row, "Dock Training"),
-      aoaBadge: get(row, "AOA Badge"),
-      customsSeal: get(row, "Customs Seal"),
-      milestones: {
-        week1: toBoolean(get(row, "WK 1: Initial Class Room Training & Truck Familiarization", "Week 1", "WK 1")),
-        week2: toBoolean(get(row, "WK 2: Off-Site AOA training (if applicable) and Airport Familiarization", "Week 2", "WK 2")),
-        week3: toBoolean(get(row, "WK 3: Full On-the-Job Training (OJT)", "Week 3", "WK 3")),
-        week4: toBoolean(get(row, "WK 4: On-the-Job Training (OJT) / EVALUATION", "Week 4", "WK 4")),
-        week5: toBoolean(get(row, "WK 5: Certification and Training Finalization", "Week 5", "WK 5")),
-      },
-      aircraft,
-      certificationDate: get(row, "Date of Cert.", "Date of Cert", "Certification Date"),
-      comments: get(row, "Comments"),
-      delayReason: get(row, "Reason for delay List", "Reason for delay", "Delay Reason"),
-    };
-  });
-}
-
-function parseCsv(text) {
-  const rows = [];
-  let row = [];
-  let field = "";
-  let quoted = false;
-  for (let index = 0; index < text.length; index += 1) {
-    const character = text[index];
-    const next = text[index + 1];
-    if (quoted) {
-      if (character === '"' && next === '"') {
-        field += '"';
-        index += 1;
-      } else if (character === '"') {
-        quoted = false;
-      } else {
-        field += character;
-      }
-    } else if (character === '"') {
-      quoted = true;
-    } else if (character === ",") {
-      row.push(field);
-      field = "";
-    } else if (character === "\n") {
-      row.push(field.replace(/\r$/, ""));
-      rows.push(row);
-      row = [];
-      field = "";
-    } else {
-      field += character;
-    }
-  }
-  if (field || row.length) {
-    row.push(field.replace(/\r$/, ""));
-    rows.push(row);
-  }
-  return rows;
-}
-
 function exportJson() {
   const payload = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     generatedAt: new Date().toISOString(),
     projectionRules: PROJECTION_RULES,
     trainees: state.trainees.map(stripDerivedFields),
@@ -1065,8 +1162,9 @@ function stripDerivedFields(record) {
 async function reloadPublishedData() {
   if (state.dataMode === "local" && !window.confirm("Discard local edits and reload the published repository data?")) return;
   localStorage.removeItem(STORAGE_KEY);
+  await loadSourceSnapshot();
   await loadPublishedData();
-  showToast("Published data reloaded.");
+  showToast("Published workbook data reloaded.");
 }
 
 async function clearLocalEdits() {
@@ -1159,8 +1257,14 @@ function formatDate(value, options = {}) {
   return new Intl.DateTimeFormat("en-US", formatOptions).format(date);
 }
 
-function normalizeHeader(value) {
-  return cleanText(value).toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+function formatNumber(value) {
+  if (!Number.isFinite(value)) return "—";
+  return new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 }).format(value);
+}
+
+function signedNumber(value) {
+  if (!Number.isFinite(value)) return "—";
+  return `${value > 0 ? "+" : ""}${formatNumber(value)}`;
 }
 
 function normalizeYesNo(value) {
