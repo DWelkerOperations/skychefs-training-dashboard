@@ -242,9 +242,9 @@
           <div class="notice notice-info" role="note">
             <span class="notice-icon" aria-hidden="true">i</span>
             <div>
-              <strong>Workbook information loads automatically.</strong>
-              The supplied trainee tracker contains no trainee records, so this tab starts empty. New records are
-              saved on this device; export JSON to publish a shared roster through the repository.
+              <strong>All 34 source tracker columns are shown below.</strong>
+              The web tracker also includes progress, reason for delay, readiness, and edit controls. Columns marked with a
+              lock are calculated automatically and cannot be overwritten. The supplied file contains no trainee records.
             </div>
           </div>
 
@@ -276,18 +276,81 @@
           </div>
 
           <article class="panel table-panel">
-            <div class="table-scroller">
-              <table class="trainee-table">
+            <div class="tracker-column-nav" aria-label="Tracker column groups">
+              <span>Complete tracker · 34 source + 4 tracking columns</span>
+              <div role="group" aria-label="Jump to tracker columns">
+                <button class="text-button" type="button" data-tracker-scroll-target="tracker-group-core">Core Fields</button>
+                <button class="text-button" type="button" data-tracker-scroll-target="tracker-group-progress">Training Progress</button>
+                <button class="text-button" type="button" data-tracker-scroll-target="tracker-group-aircraft">Aircraft</button>
+                <button class="text-button" type="button" data-tracker-scroll-target="tracker-group-outcomes">Outcomes</button>
+              </div>
+            </div>
+            <div class="table-scroller tracker-scroller" id="tracker-scroller">
+              <table class="trainee-table" aria-label="Complete trainee tracking table">
+                <colgroup>
+                  <col class="tracker-col-number" />
+                  <col class="tracker-col-name" />
+                  <col class="tracker-col-employee" />
+                  <col class="tracker-col-standard" span="3" />
+                  <col class="tracker-col-date" span="4" />
+                  <col class="tracker-col-standard" span="3" />
+                  <col class="tracker-col-date" />
+                  <col class="tracker-col-long" span="3" />
+                  <col class="tracker-col-progress" />
+                  <col class="tracker-col-week" span="5" />
+                  <col class="tracker-col-date" />
+                  <col class="tracker-col-aircraft" span="9" />
+                  <col class="tracker-col-date" />
+                  <col class="tracker-col-notes" span="2" />
+                  <col class="tracker-col-readiness" />
+                  <col class="tracker-col-actions" />
+                </colgroup>
                 <thead>
-                  <tr>
-                    <th scope="col">Trainee</th>
-                    <th scope="col">Position / source</th>
-                    <th scope="col">Training stage</th>
-                    <th scope="col">Progress</th>
-                    <th scope="col">Prerequisites</th>
-                    <th scope="col">Projected certification <span title="Calculated field" aria-label="Calculated field">🔒</span></th>
-                    <th scope="col">Readiness</th>
-                    <th scope="col"><span class="sr-only">Actions</span></th>
+                  <tr class="tracker-group-row">
+                    <th id="tracker-group-core" scope="colgroup" colspan="17">Core Tracker Fields</th>
+                    <th id="tracker-group-progress" scope="colgroup" colspan="7">Training Progress</th>
+                    <th id="tracker-group-aircraft" scope="colgroup" colspan="9">Aircraft Qualifications</th>
+                    <th id="tracker-group-outcomes" scope="colgroup" colspan="5">Outcome &amp; Actions</th>
+                  </tr>
+                  <tr class="tracker-header-row">
+                    <th class="tracker-col-number" scope="col">#</th>
+                    <th class="tracker-col-name" scope="col">Trainee Name</th>
+                    <th class="tracker-col-employee" scope="col">Employee Number</th>
+                    <th scope="col">Position</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Source</th>
+                    <th class="tracker-col-date" scope="col">Hire Date (or Transfer Date)</th>
+                    <th class="tracker-col-date tracker-locked-column" scope="col">Probation End Date <span title="Calculated field" aria-label="Calculated field">🔒</span></th>
+                    <th class="tracker-col-date" scope="col">Safety Initial Class Start Date</th>
+                    <th class="tracker-col-date tracker-locked-column" scope="col">Safety Initial Class End Date <span title="Calculated field" aria-label="Calculated field">🔒</span></th>
+                    <th scope="col">Dock Training</th>
+                    <th scope="col">AOA Badge</th>
+                    <th scope="col">Customs Seal</th>
+                    <th class="tracker-col-date" scope="col">Assigned OJT Date</th>
+                    <th class="tracker-col-long" scope="col">OJT Trainer Name</th>
+                    <th class="tracker-col-long" scope="col">OJT Trainer Schedule</th>
+                    <th class="tracker-col-long" scope="col">Training Stage</th>
+                    <th class="tracker-col-progress tracker-locked-column" scope="col">Progress <span title="Calculated field" aria-label="Calculated field">🔒</span></th>
+                    <th class="tracker-col-week" scope="col">WK 1: Initial Classroom Training &amp; Truck Familiarization</th>
+                    <th class="tracker-col-week" scope="col">WK 2: Off-Site AOA Training &amp; Airport Familiarization</th>
+                    <th class="tracker-col-week" scope="col">WK 3: Full On-the-Job Training</th>
+                    <th class="tracker-col-week" scope="col">WK 4: OJT / Evaluation</th>
+                    <th class="tracker-col-week" scope="col">WK 5: Certification &amp; Training Finalization</th>
+                    <th class="tracker-col-date tracker-locked-column" scope="col">Projected Certification Date <span title="Calculated field" aria-label="Calculated field">🔒</span></th>
+                    <th class="tracker-col-aircraft" scope="col">CRJ</th>
+                    <th class="tracker-col-aircraft" scope="col">E75</th>
+                    <th class="tracker-col-aircraft" scope="col">A319 / A320 / A321</th>
+                    <th class="tracker-col-aircraft" scope="col">B737</th>
+                    <th class="tracker-col-aircraft" scope="col">B757</th>
+                    <th class="tracker-col-aircraft" scope="col">B767</th>
+                    <th class="tracker-col-aircraft" scope="col" title="The source tracker contains a second B767 column.">B767 (2)</th>
+                    <th class="tracker-col-aircraft" scope="col">A380</th>
+                    <th class="tracker-col-aircraft" scope="col">B747</th>
+                    <th class="tracker-col-date" scope="col">Date of Certification</th>
+                    <th class="tracker-col-notes" scope="col">Comments</th>
+                    <th class="tracker-col-notes" scope="col">Reason for Delay</th>
+                    <th class="tracker-col-readiness tracker-locked-column" scope="col">Readiness <span title="Calculated field" aria-label="Calculated field">🔒</span></th>
+                    <th class="tracker-col-actions" scope="col"><span class="sr-only">Actions</span></th>
                   </tr>
                 </thead>
                 <tbody id="trainee-table-body"></tbody>

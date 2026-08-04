@@ -24,7 +24,9 @@ Give leaders a fast overall view of training progress and give training coordina
 
 2. **Trainee input tab**
    - Search and filters.
-   - A people table with position, source, training stage, progress, prerequisites, projected certification, and readiness.
+   - A horizontally navigable tracker that preserves every source workbook column in source order, even when the roster is empty.
+   - Keep trainee name, employee number, and the edit action visible while moving between core, progress, aircraft, and outcome column groups.
+   - Clearly mark protected progress, projected dates, and readiness fields.
    - Add/edit form based on the tracker fields: trainee name, employee number, position, status, source, hire/transfer date, safety class date, dock training, AOA badge, customs seal, OJT assignment, trainer, schedule, training stage, five weekly milestones, aircraft qualifications, actual certification date, delay reason, and comments.
    - Clearly gray and lock all derived date fields.
    - CSV and JSON export.

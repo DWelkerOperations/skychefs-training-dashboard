@@ -7,7 +7,7 @@ A static, GitHub Pages-ready dashboard built from the structure of:
 - `Progression Template.xlsb`
 - `Template Trainee Tracker.xlsx`
 
-The site automatically loads a published snapshot extracted from both source workbooks. It has an overall visual dashboard, a trainee input table, protected calculations, CSV/JSON export, and a documented publishing workflow. No build step or external JavaScript package is required.
+The site automatically loads a published snapshot extracted from both source workbooks. It has an overall visual dashboard, a complete horizontally navigable trainee tracker, protected calculations, CSV/JSON export, and a documented publishing workflow. No build step or external JavaScript package is required.
 
 ## Run locally
 
@@ -35,6 +35,7 @@ The page loads `data/source-snapshot.json` and `data/trainees.json` automaticall
 
 - `data/source-snapshot.json` contains aggregate staffing, forecast, region, and station information extracted from the supplied workbooks.
 - The supplied trainee tracker contains headers and dropdown values but no trainee rows, so `data/trainees.json` starts with an empty roster.
+- The **Trainee Input** tab preserves all 34 source columns in workbook order and adds protected progress/readiness plus delay and edit controls.
 - Edits made in **Trainee input** are stored in the current browser's `localStorage`.
 - **Export JSON** produces a replacement for `data/trainees.json`.
 - Commit that replacement file to publish one shared, read-only roster.

@@ -140,6 +140,7 @@ function cacheElements() {
     "trainee-position-filter",
     "trainee-risk-filter",
     "record-count",
+    "tracker-scroller",
     "trainee-table-body",
     "trainee-empty",
     "reload-published-button",
@@ -201,6 +202,10 @@ function bindEvents() {
     renderTraineeTable();
   });
 
+  document.querySelectorAll("[data-tracker-scroll-target]").forEach((button) => {
+    button.addEventListener("click", () => scrollTrackerToGroup(button.dataset.trackerScrollTarget));
+  });
+
   elements.traineeTableBody.addEventListener("click", handleEditClick);
   elements.attentionTableBody.addEventListener("click", handleEditClick);
   elements.traineeForm.addEventListener("submit", saveTraineeFromForm);
@@ -219,6 +224,16 @@ function bindEvents() {
       showView(view, false);
     }
   });
+}
+
+function scrollTrackerToGroup(targetId) {
+  const target = document.getElementById(targetId);
+  if (!target || !elements.trackerScroller) return;
+  const stickyIdentityWidth = 446;
+  const left = targetId === "tracker-group-outcomes"
+    ? elements.trackerScroller.scrollWidth - elements.trackerScroller.clientWidth
+    : Math.max(0, target.offsetLeft - stickyIdentityWidth);
+  elements.trackerScroller.scrollTo({ left, behavior: "auto" });
 }
 
 function buildFormOptions() {
@@ -712,7 +727,6 @@ function renderTraineeTable() {
 
   elements.recordCount.textContent = `${filtered.length} trainee${filtered.length === 1 ? "" : "s"}`;
   elements.traineeEmpty.classList.toggle("is-hidden", filtered.length > 0);
-  elements.traineeTableBody.parentElement.parentElement.classList.toggle("is-hidden", filtered.length === 0);
   if (!filtered.length) {
     const title = elements.traineeEmpty.querySelector("h3");
     const message = elements.traineeEmpty.querySelector("p");
@@ -727,19 +741,81 @@ function renderTraineeTable() {
   elements.traineeTableBody.innerHTML = filtered
     .map((record) => {
       const projectionText = record.projection.date ? formatDate(record.projection.date) : "Not available";
+      const recordNumber = state.trainees.findIndex((item) => item.id === record.id) + 1;
+      const hireDate = parseDate(record.hireDate);
+      const safetyStartDate = parseDate(record.safetyStartDate);
+      const probationEndDate = hireDate ? addDays(hireDate, PROJECTION_RULES.probationDays) : null;
+      const safetyEndDate = safetyStartDate ? addDays(safetyStartDate, PROJECTION_RULES.safetyClassEndOffsetDays) : null;
       return `
         <tr>
-          <td><span class="person-name">${escapeHtml(record.traineeName || "Unnamed trainee")}</span><span class="person-meta">${escapeHtml(record.employeeNumber || "No employee number")}${record.demo ? " · Example" : ""}</span></td>
-          <td><strong>${escapeHtml(record.position || "—")}</strong><span class="cell-meta">${escapeHtml(record.source || "Source not recorded")}</span></td>
-          <td><strong>${escapeHtml(record.trainingStage || "Not started")}</strong><span class="cell-meta">${escapeHtml(record.trainerName || "Trainer not assigned")}</span></td>
-          <td>${progressMarkup(record.progress, record.risk.label)}</td>
-          <td>${prerequisiteMarkup(record)}</td>
-          <td><span class="locked-date">${escapeHtml(projectionText)}</span><span class="cell-meta">${escapeHtml(record.projection.basis)}</span></td>
-          <td><span class="status-pill ${riskClass(record.risk.label)}">${escapeHtml(record.risk.label)}</span><span class="cell-meta">${escapeHtml(record.risk.issue)}</span></td>
-          <td><button class="row-action" type="button" data-edit-id="${escapeHtml(record.id)}" aria-label="Edit ${escapeHtml(record.traineeName || "trainee")}">✎</button></td>
+          <td class="tracker-col-number">${recordNumber}</td>
+          <td class="tracker-col-name"><span class="person-name">${escapeHtml(record.traineeName || "Unnamed trainee")}</span>${record.demo ? '<span class="person-meta">Example</span>' : ""}</td>
+          <td class="tracker-col-employee">${escapeHtml(record.employeeNumber || "—")}</td>
+          <td>${escapeHtml(record.position || "—")}</td>
+          <td>${escapeHtml(record.status || "—")}</td>
+          <td>${escapeHtml(record.source || "—")}</td>
+          <td class="tracker-col-date">${trackerDateMarkup(record.hireDate)}</td>
+          <td class="tracker-col-date tracker-locked-column">${calculatedDateMarkup(probationEndDate, `Hire or transfer + ${PROJECTION_RULES.probationDays} days`)}</td>
+          <td class="tracker-col-date">${trackerDateMarkup(record.safetyStartDate)}</td>
+          <td class="tracker-col-date tracker-locked-column">${calculatedDateMarkup(safetyEndDate, `Safety class start + ${PROJECTION_RULES.safetyClassEndOffsetDays} days`)}</td>
+          <td>${trackerFlagMarkup(record.dockTraining, "Dock training")}</td>
+          <td>${trackerFlagMarkup(record.aoaBadge, "AOA badge")}</td>
+          <td>${trackerFlagMarkup(record.customsSeal, "Customs seal")}</td>
+          <td class="tracker-col-date">${trackerDateMarkup(record.assignedOjtDate)}</td>
+          <td class="tracker-col-long">${escapeHtml(record.trainerName || "—")}</td>
+          <td class="tracker-col-long">${escapeHtml(record.trainerSchedule || "—")}</td>
+          <td class="tracker-col-long">${escapeHtml(record.trainingStage || "Not started")}</td>
+          <td class="tracker-col-progress tracker-locked-column">${progressMarkup(record.progress, record.risk.label)}</td>
+          <td class="tracker-col-week">${trackerCheckMarkup(record.milestones.week1, "Week 1")}</td>
+          <td class="tracker-col-week">${trackerCheckMarkup(record.milestones.week2, "Week 2")}</td>
+          <td class="tracker-col-week">${trackerCheckMarkup(record.milestones.week3, "Week 3")}</td>
+          <td class="tracker-col-week">${trackerCheckMarkup(record.milestones.week4, "Week 4")}</td>
+          <td class="tracker-col-week">${trackerCheckMarkup(record.milestones.week5, "Week 5")}</td>
+          <td class="tracker-col-date tracker-locked-column"><span class="locked-date">${escapeHtml(projectionText)}</span><span class="cell-meta">${escapeHtml(record.projection.basis)}</span></td>
+          <td class="tracker-col-aircraft">${trackerCheckMarkup(record.aircraft.includes("CRJ"), "CRJ")}</td>
+          <td class="tracker-col-aircraft">${trackerCheckMarkup(record.aircraft.includes("E75"), "E75")}</td>
+          <td class="tracker-col-aircraft">${trackerCheckMarkup(record.aircraft.includes("A319 / A320 / A321"), "A319 / A320 / A321")}</td>
+          <td class="tracker-col-aircraft">${trackerCheckMarkup(record.aircraft.includes("B737"), "B737")}</td>
+          <td class="tracker-col-aircraft">${trackerCheckMarkup(record.aircraft.includes("B757"), "B757")}</td>
+          <td class="tracker-col-aircraft">${trackerCheckMarkup(record.aircraft.includes("B767"), "B767")}</td>
+          <td class="tracker-col-aircraft">${trackerCheckMarkup(record.aircraft.includes("B767"), "Second B767 source column")}</td>
+          <td class="tracker-col-aircraft">${trackerCheckMarkup(record.aircraft.includes("A380"), "A380")}</td>
+          <td class="tracker-col-aircraft">${trackerCheckMarkup(record.aircraft.includes("B747"), "B747")}</td>
+          <td class="tracker-col-date">${trackerDateMarkup(record.certificationDate)}</td>
+          <td class="tracker-col-notes">${trackerTextMarkup(record.comments)}</td>
+          <td class="tracker-col-notes">${trackerTextMarkup(record.delayReason)}</td>
+          <td class="tracker-col-readiness tracker-locked-column"><span class="status-pill ${riskClass(record.risk.label)}">${escapeHtml(record.risk.label)}</span><span class="cell-meta">${escapeHtml(record.risk.issue)}</span></td>
+          <td class="tracker-col-actions"><button class="row-action" type="button" data-edit-id="${escapeHtml(record.id)}" aria-label="Edit ${escapeHtml(record.traineeName || "trainee")}">✎</button></td>
         </tr>`;
     })
     .join("");
+}
+
+function trackerDateMarkup(value) {
+  return value ? escapeHtml(formatDate(value)) : "—";
+}
+
+function calculatedDateMarkup(value, basis) {
+  const text = value ? formatDate(value) : "Not available";
+  return `<span class="locked-date">${escapeHtml(text)}</span><span class="cell-meta">${escapeHtml(basis)}</span>`;
+}
+
+function trackerFlagMarkup(value, label) {
+  const normalized = value || "";
+  const display = normalized === "Y" ? "Yes" : normalized === "N" ? "No" : normalized === "Not required" ? "N/R" : "—";
+  const className = normalized === "Y" ? "is-complete" : normalized === "N" ? "is-blocked" : normalized === "Not required" ? "is-neutral" : "";
+  return `<span class="tracker-flag ${className}" title="${escapeHtml(`${label}: ${normalized || "not recorded"}`)}">${escapeHtml(display)}</span>`;
+}
+
+function trackerCheckMarkup(complete, label) {
+  return complete
+    ? `<span class="tracker-check is-complete" aria-label="${escapeHtml(`${label} complete`)}">✓</span>`
+    : `<span class="tracker-check" aria-label="${escapeHtml(`${label} not complete`)}">—</span>`;
+}
+
+function trackerTextMarkup(value) {
+  const text = cleanText(value);
+  return text ? `<span class="tracker-text" title="${escapeHtml(text)}">${escapeHtml(text)}</span>` : "—";
 }
 
 function progressMarkup(progress, riskLabel) {
