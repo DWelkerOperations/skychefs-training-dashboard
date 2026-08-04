@@ -376,15 +376,15 @@ function renderDataBadge() {
   elements.dataModeBadge.classList.toggle("is-local", state.dataMode === "local");
 
   if (state.dataMode === "local") {
-    elements.dataModeBadge.textContent = "Local edits";
+    elements.dataModeBadge.textContent = "Local Edits";
   } else if (state.trainees.length) {
-    elements.dataModeBadge.textContent = "Published roster";
+    elements.dataModeBadge.textContent = "Published Roster";
   } else if (state.sourceSnapshot) {
-    elements.dataModeBadge.textContent = "Workbook data";
+    elements.dataModeBadge.textContent = "Workbook Data";
   } else if (state.dataMode === "unavailable") {
-    elements.dataModeBadge.textContent = "Data unavailable";
+    elements.dataModeBadge.textContent = "Data Unavailable";
   } else {
-    elements.dataModeBadge.textContent = "Published data";
+    elements.dataModeBadge.textContent = "Published Data";
   }
 }
 
@@ -452,35 +452,35 @@ function renderSourceOverview() {
   elements.overviewFilterCluster.classList.add("is-hidden");
   elements.kpiActiveLabel.textContent = "Certified drivers";
   elements.kpiActive.textContent = formatNumber(latest.certified);
-  elements.kpiActiveNote.textContent = `${formatNumber(latest.total)} including forecast certifications`;
-  elements.kpiOnTrackLabel.textContent = "Drivers with TDY";
+  elements.kpiActiveNote.textContent = `${formatNumber(latest.total)} after ${formatNumber(latest.newHireCertifications)} projected certifications`;
+  elements.kpiOnTrackLabel.textContent = "Driver coverage with TDY";
   elements.kpiOnTrack.textContent = formatNumber(latest.totalWithTdy);
-  elements.kpiOnTrackNote.textContent = `${formatNumber(latest.total)} drivers + ${formatNumber(latest.badgedTdy)} TDY`;
+  elements.kpiOnTrackNote.textContent = `${formatNumber(latest.total)} forecast drivers + ${formatNumber(latest.badgedTdy)} badged TDY staff`;
   elements.kpiDueLabel.textContent = "Staffing need";
   elements.kpiDue.textContent = formatNumber(latest.staffingNeed);
-  elements.kpiDueNote.textContent = "Driver requirement in the forecast";
+  elements.kpiDueNote.textContent = "Forecast driver requirement";
   elements.kpiAttentionLabel.textContent = "Variance to need";
   elements.kpiAttention.textContent = signedNumber(latest.variance);
-  elements.kpiAttentionNote.textContent = latest.variance >= 0 ? "Above the forecast staffing need" : "Below the forecast staffing need";
+  elements.kpiAttentionNote.textContent = latest.variance >= 0 ? "Forecast coverage above requirement" : "Forecast coverage below requirement";
   elements.kpiAttentionCard.classList.toggle("kpi-card-alert", latest.variance < 0);
   elements.kpiAttentionIcon.classList.toggle("kpi-icon-alert", latest.variance < 0);
   elements.kpiAttentionIcon.classList.toggle("kpi-icon-good", latest.variance >= 0);
   elements.kpiAttentionIcon.textContent = latest.variance >= 0 ? "✓" : "!";
 
   const forecastThrough = latest.date ? formatDate(latest.date) : "the last workbook period";
-  elements.overviewAsOf.textContent = `Loaded automatically from the supplied workbooks · forecast through ${forecastThrough}`;
-  elements.forecastKicker.textContent = "Workbook outlook";
-  elements.forecastTitle.textContent = "New driver certifications";
-  elements.forecastMeta.textContent = "Last 8 workbook weeks";
+  elements.overviewAsOf.textContent = `Workbook snapshot loaded automatically · driver forecast through ${forecastThrough}`;
+  elements.forecastKicker.textContent = "Driver Forecast";
+  elements.forecastTitle.textContent = "New Driver Certification Forecast";
+  elements.forecastMeta.textContent = "Last 8 Workbook Weeks";
   elements.forecastChart.setAttribute("aria-label", "New driver certifications by workbook week");
-  elements.stageKicker.textContent = "Progression baseline";
-  elements.stageTitle.textContent = "Progress to position goals";
-  elements.staffingKicker.textContent = "Pivot detail";
-  elements.staffingTitle.textContent = "Regional staffing snapshot";
-  elements.staffingMeta.textContent = sourceUpdated ? `Source updated ${formatDate(sourceUpdated)}` : "Workbook data";
-  elements.staffingSourceNote.textContent = "Employees, staffing need, open positions, and prehires are loaded from the Progression Template workbook snapshot.";
-  elements.attentionKicker.textContent = "Largest gaps";
-  elements.attentionTitle.textContent = "Stations by open positions";
+  elements.stageKicker.textContent = "Staffing Goals";
+  elements.stageTitle.textContent = "Progress Toward Position Goals";
+  elements.staffingKicker.textContent = "Regional View";
+  elements.staffingTitle.textContent = "Regional Staffing";
+  elements.staffingMeta.textContent = sourceUpdated ? `Workbook Update: ${formatDate(sourceUpdated)}` : "Workbook Data";
+  elements.staffingSourceNote.textContent = "Employee totals, staffing needs, open positions, and prehires load automatically from the Progression Template snapshot.";
+  elements.attentionKicker.textContent = "Open Positions";
+  elements.attentionTitle.textContent = "Stations with the Most Open Positions";
   elements.attentionViewAll.classList.add("is-hidden");
 
   renderSourceForecast(driverWeeks);
@@ -501,17 +501,17 @@ function restoreTraineeOverviewChrome() {
   elements.kpiAttentionIcon.classList.remove("kpi-icon-good");
   elements.kpiAttentionIcon.textContent = "!";
   elements.forecastKicker.textContent = "Outlook";
-  elements.forecastTitle.textContent = "Projected certifications";
-  elements.forecastMeta.textContent = "8-week forecast";
+  elements.forecastTitle.textContent = "Projected Certifications";
+  elements.forecastMeta.textContent = "8-Week Forecast";
   elements.forecastChart.setAttribute("aria-label", "Projected certifications by week");
   elements.stageKicker.textContent = "Pipeline";
-  elements.stageTitle.textContent = "Training stage";
-  elements.staffingKicker.textContent = "Source workbook baseline";
-  elements.staffingTitle.textContent = "Staffing progression";
+  elements.stageTitle.textContent = "Training Stage";
+  elements.staffingKicker.textContent = "Source Workbook Baseline";
+  elements.staffingTitle.textContent = "Staffing Progression";
   elements.staffingMeta.textContent = "Updated Feb 25, 2026";
   elements.staffingSourceNote.textContent = "Reference goals and “have” counts come from the Progression Template. They are kept separate from live trainee KPIs to avoid presenting the dated baseline as current headcount.";
-  elements.attentionKicker.textContent = "Action list";
-  elements.attentionTitle.textContent = "People needing attention";
+  elements.attentionKicker.textContent = "Action List";
+  elements.attentionTitle.textContent = "People Needing Attention";
   elements.attentionViewAll.classList.remove("is-hidden");
   elements.attentionTableHead.innerHTML = `
     <tr>
@@ -717,10 +717,10 @@ function renderTraineeTable() {
     const title = elements.traineeEmpty.querySelector("h3");
     const message = elements.traineeEmpty.querySelector("p");
     if (!state.trainees.length) {
-      title.textContent = "No trainee rows were found in the supplied tracker";
-      message.textContent = "The workbook contains the field structure and dropdowns only. Add the first trainee here when you are ready.";
+      title.textContent = "No Trainee Records Found";
+      message.textContent = "The supplied tracker contains field definitions and dropdown values, but no trainee records. Add the first trainee when ready.";
     } else {
-      title.textContent = "No trainees match these filters";
+      title.textContent = "No Trainees Match These Filters";
       message.textContent = "Adjust the search or filters to see other records.";
     }
   }
@@ -897,7 +897,7 @@ function handleEditClick(event) {
 function openTraineeDialog(record = null) {
   elements.traineeForm.reset();
   elements.formError.textContent = "";
-  elements.traineeDialogTitle.textContent = record ? "Edit trainee" : "Add trainee";
+  elements.traineeDialogTitle.textContent = record ? "Edit Trainee" : "Add Trainee";
   elements.deleteTraineeButton.classList.toggle("is-hidden", !record);
 
   if (record) {

@@ -74,6 +74,7 @@ h1,
 h2,
 h3 {
   letter-spacing: -0.025em;
+  text-wrap: balance;
 }
 
 h1 {

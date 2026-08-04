@@ -34,7 +34,7 @@
         </div>
 
         <div class="header-actions">
-          <span class="data-badge" id="data-mode-badge">Loading data…</span>
+          <span class="data-badge" id="data-mode-badge">Loading Data…</span>
           <button class="button button-primary" type="button" data-open-trainee>
             <span aria-hidden="true">＋</span> Add trainee
           </button>
@@ -62,7 +62,7 @@
           aria-controls="trainees-view"
           data-view-target="trainees"
         >
-          Trainee input
+          Trainee Input
           <span class="tab-count" id="trainee-tab-count">0</span>
         </button>
         <button
@@ -74,7 +74,7 @@
           aria-controls="method-view"
           data-view-target="method"
         >
-          Rules &amp; publishing
+          Rules &amp; Publishing
         </button>
       </nav>
     </header>
@@ -91,7 +91,7 @@
           <div class="page-heading">
             <div>
               <p class="eyebrow">Overall view</p>
-              <h2>Training pipeline health</h2>
+              <h2>Training Pipeline Health</h2>
               <p class="page-description" id="overview-as-of">Calculated from the published trainee roster.</p>
             </div>
             <div class="filter-cluster" id="overview-filter-cluster" aria-label="Overview filters">
@@ -150,7 +150,7 @@
               <div class="panel-heading">
                 <div>
                   <p class="panel-kicker" id="forecast-kicker">Outlook</p>
-                  <h3 id="forecast-title">Projected certifications</h3>
+                  <h3 id="forecast-title">Projected Certifications</h3>
                 </div>
                 <span class="panel-meta" id="forecast-meta">8-week forecast</span>
               </div>
@@ -161,7 +161,7 @@
               <div class="panel-heading">
                 <div>
                   <p class="panel-kicker" id="stage-kicker">Pipeline</p>
-                  <h3 id="stage-title">Training stage</h3>
+                  <h3 id="stage-title">Training Stage</h3>
                 </div>
               </div>
               <div class="stage-breakdown" id="stage-breakdown"></div>
@@ -173,7 +173,7 @@
               <div class="panel-heading">
                 <div>
                   <p class="panel-kicker" id="staffing-kicker">Source workbook baseline</p>
-                  <h3 id="staffing-title">Staffing progression</h3>
+                  <h3 id="staffing-title">Staffing Progression</h3>
                 </div>
                 <span class="panel-meta" id="staffing-meta">Updated Feb 25, 2026</span>
               </div>
@@ -188,7 +188,7 @@
               <div class="panel-heading">
                 <div>
                   <p class="panel-kicker" id="attention-kicker">Action list</p>
-                  <h3 id="attention-title">People needing attention</h3>
+                  <h3 id="attention-title">People Needing Attention</h3>
                 </div>
                 <button class="text-button" id="attention-view-all" type="button" data-view-target="trainees">View all trainees →</button>
               </div>
@@ -227,7 +227,7 @@
           <div class="page-heading input-heading">
             <div>
               <p class="eyebrow">Input tab</p>
-              <h2>Trainees &amp; progress</h2>
+              <h2>Trainees &amp; Progress</h2>
               <p class="page-description">
                 Enter source facts only. Gray fields and lock icons are calculated automatically.
               </p>
@@ -243,7 +243,7 @@
             <span class="notice-icon" aria-hidden="true">i</span>
             <div>
               <strong>Workbook information loads automatically.</strong>
-              The supplied trainee tracker contains no people rows, so this tab starts empty. New trainee records are
+              The supplied trainee tracker contains no trainee records, so this tab starts empty. New records are
               saved on this device; export JSON to publish a shared roster through the repository.
             </div>
           </div>
@@ -295,7 +295,7 @@
             </div>
             <div class="empty-state is-hidden" id="trainee-empty">
               <span aria-hidden="true">＋</span>
-              <h3>No trainees match these filters</h3>
+              <h3>No Trainees Match These Filters</h3>
               <p>Add a trainee or adjust the search and filters.</p>
               <button class="button button-primary" type="button" data-open-trainee>Add trainee</button>
             </div>
@@ -315,7 +315,7 @@
           <div class="page-heading">
             <div>
               <p class="eyebrow">Control &amp; governance</p>
-              <h2>Rules, data ownership, and publishing</h2>
+              <h2>Rules, Data Ownership, and Publishing</h2>
               <p class="page-description">
                 The page keeps calculations out of the input grid so routine updates cannot overwrite them.
               </p>
@@ -326,12 +326,12 @@
             <article class="panel method-card">
               <div class="method-number" aria-hidden="true">01</div>
               <p class="panel-kicker">Protected calculation</p>
-              <h3>Projected certification</h3>
+              <h3>Projected Certification</h3>
               <ol class="rule-list">
                 <li>Use the actual certification date when entered.</li>
-                <li>Otherwise use assigned OJT date + <strong id="rule-ojt-days">21</strong> calendar days.</li>
-                <li>Otherwise use safety class start + <strong id="rule-training-days">35</strong> calendar days.</li>
-                <li>As a final fallback, use hire / transfer date + <strong id="rule-hire-days">35</strong> calendar days.</li>
+                <li>Otherwise use the assigned OJT date + <strong id="rule-ojt-days">21</strong> calendar days.</li>
+                <li>Otherwise use the safety class start date + <strong id="rule-training-days">35</strong> calendar days.</li>
+                <li>As a final fallback, use the hire or transfer date + <strong id="rule-hire-days">35</strong> calendar days.</li>
               </ol>
               <p class="card-note">The hierarchy mirrors the five-week training path in the source tracker.</p>
             </article>
@@ -339,11 +339,11 @@
             <article class="panel method-card">
               <div class="method-number" aria-hidden="true">02</div>
               <p class="panel-kicker">Protected calculation</p>
-              <h3>Supporting dates</h3>
+              <h3>Supporting Dates</h3>
               <dl class="calculation-list">
                 <div>
                   <dt>Probation end</dt>
-                  <dd>Hire / transfer date + <strong id="rule-probation-days">90</strong> calendar days</dd>
+                  <dd>Hire or transfer date + <strong id="rule-probation-days">90</strong> calendar days</dd>
                 </div>
                 <div>
                   <dt>Safety class end</dt>
@@ -351,7 +351,7 @@
                 </div>
                 <div>
                   <dt>Progress</dt>
-                  <dd>20% for each completed week milestone</dd>
+                  <dd>20 percentage points for each completed weekly milestone</dd>
                 </div>
               </dl>
             </article>
@@ -359,11 +359,11 @@
             <article class="panel method-card">
               <div class="method-number" aria-hidden="true">03</div>
               <p class="panel-kicker">Readiness logic</p>
-              <h3>Attention states</h3>
+              <h3>Attention States</h3>
               <ul class="status-key">
                 <li><span class="status-dot status-dot-delayed"></span><strong>Delayed</strong> — projection is past due.</li>
-                <li><span class="status-dot status-dot-blocked"></span><strong>Blocked</strong> — a required prerequisite is marked No.</li>
-                <li><span class="status-dot status-dot-risk"></span><strong>At risk</strong> — progress trails the schedule or certification is near.</li>
+                <li><span class="status-dot status-dot-blocked"></span><strong>Blocked</strong> — an operational prerequisite is marked No.</li>
+                <li><span class="status-dot status-dot-risk"></span><strong>At risk</strong> — progress trails the schedule or projected certification is approaching.</li>
                 <li><span class="status-dot status-dot-good"></span><strong>On track</strong> — no current exception.</li>
               </ul>
             </article>
@@ -373,7 +373,7 @@
             <div class="panel-heading">
               <div>
                 <p class="panel-kicker">GitHub Pages workflow</p>
-                <h3>Publish one shared roster</h3>
+                <h3>Publish One Shared Roster</h3>
               </div>
             </div>
             <div class="workflow-steps">
@@ -410,7 +410,7 @@
         <div class="dialog-header">
           <div>
             <p class="eyebrow">Trainee record</p>
-            <h2 id="trainee-dialog-title">Add trainee</h2>
+            <h2 id="trainee-dialog-title">Add Trainee</h2>
           </div>
           <button class="icon-button" type="button" data-close-dialog aria-label="Close">×</button>
         </div>
@@ -458,7 +458,7 @@
         <div class="form-section">
           <div class="form-section-heading">
             <span>2</span>
-            <div><h3>Training schedule</h3><p>Dates, trainer, and current stage</p></div>
+            <div><h3>Training Schedule</h3><p>Dates, trainer, and current stage</p></div>
           </div>
           <div class="form-grid form-grid-3">
             <label>
@@ -522,7 +522,7 @@
         <div class="form-section">
           <div class="form-section-heading">
             <span>4</span>
-            <div><h3>Five-week progression</h3><p>Mark each milestone when completed</p></div>
+            <div><h3>Five-Week Progression</h3><p>Mark each milestone when completed</p></div>
           </div>
           <div class="milestone-grid">
             <label class="milestone-check"><input type="checkbox" name="week1" /><span><strong>Week 1</strong>Initial class &amp; truck familiarization</span></label>
@@ -536,7 +536,7 @@
         <div class="form-section">
           <div class="form-section-heading">
             <span>5</span>
-            <div><h3>Qualifications &amp; notes</h3><p>Aircraft sign-offs and exception context</p></div>
+            <div><h3>Qualifications &amp; Notes</h3><p>Aircraft sign-offs and exception context</p></div>
           </div>
           <fieldset class="aircraft-fieldset">
             <legend>Aircraft qualifications</legend>
